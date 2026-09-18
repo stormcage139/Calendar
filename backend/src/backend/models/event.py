@@ -10,10 +10,12 @@ from sqlalchemy import Enum as SQLEnum
 
 from .base import Base
 
+
 class EventStatus(Enum):
     CREATED = "new"
     IN_PROCESS = "closed"
     ENDED = "active"
+
 
 class Event(Base):
     """ "название, описание, тип, создатель, дедлайн, статус, настройки голосования"""
@@ -23,9 +25,12 @@ class Event(Base):
     name: Mapped[str] = mapped_column(String(length=128))
     online: Mapped[bool] = mapped_column(
         Boolean(),
-        server_default=False,
+        server_default="0",
         default=False,
     )
     creator: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    deadline: Mapped[date] = mapped_column(Date()) 
-    status: Mapped[EventStatus] = mapped_column(SQLEnum(EventStatus,name="event_status"),default=EventStatus.CREATED)
+    deadline: Mapped[date] = mapped_column(Date())
+    status: Mapped[EventStatus] = mapped_column(
+        SQLEnum(EventStatus, name="event_status"),
+        default=EventStatus.CREATED,
+    )
