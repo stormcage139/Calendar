@@ -6,7 +6,12 @@ class UserAuthSchema(BaseModel):
     login: str
     password: str
     
-    
+class UserOutSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    login: str
+    email: str
+
 class Token(BaseModel):
     access_token: str
     token_type: str

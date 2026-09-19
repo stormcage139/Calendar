@@ -4,7 +4,7 @@ from typing import Annotated
 from backend.api.deps import SessionDep
 from backend.models.user import User
 from backend.repositories.users import get_user_by_login
-from backend.schemas.auth import Token, TokenData, UserAuthSchema
+from backend.schemas.auth import Token, TokenData, UserAuthSchema, UserOutSchema
 from backend.services.auth import authenticate_user, create_access_token
 import jwt
 from fastapi import Body, Depends, APIRouter, HTTPException, status
@@ -21,7 +21,7 @@ credentials_exception = HTTPException(
     headers={"WWW-Authenticate": "Bearer"},
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token_test")
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ async def test_login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: SessionDep,
 ) -> Token:
-    user: User = await authenticate_user(login=form_data.username, session=session)
+    user: User = await authenticate_user(login=form_data.username, password=form_data.password, session=session)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -71,7 +71,7 @@ async def login_for_access_token(
     form_data: UserAuthSchema,
     session: SessionDep,
 ) -> Token:
-    user: User = await authenticate_user(form_data, session=session)
+    user: User = await authenticate_user(*form_data.model_config, session=session)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,5 +89,5 @@ async def login_for_access_token(
 @router.get("/users/me/")
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)],
-):
-    return current_user
+) -> UserOutSchema:
+    return UserOutSchema.model_validate(current_user)

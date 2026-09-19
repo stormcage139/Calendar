@@ -24,13 +24,13 @@ def create_access_token(
     return encoded_jwt
 
 
-async def authenticate_user(form_data: UserAuthSchema, session: SessionDep) -> User:
-    user = await get_user_by_login(login=form_data.login, session=session)
+async def authenticate_user(login: str, password: str, session: SessionDep) -> User:
+    user = await get_user_by_login(login=login, session=session)
     if not user:
-        log.warning("User is not found %s , %s", form_data.password, config.auth.dummy_hash.strip())
-        verify_password(form_data.password, config.auth.dummy_hash)
+        log.warning("User is not found %s , %s", password, config.auth.dummy_hash.strip())
+        verify_password(password, config.auth.dummy_hash)
         return False
-    if not verify_password(form_data.password, user.password):
+    if not verify_password(password, user.password):
         log.error("Incorrect password for user %s", user.login)
         return False
     return user
