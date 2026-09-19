@@ -8,18 +8,19 @@ from backend.services.users import UserInputSchema
 from backend.repositories.users import (
     create_user as create_user_crud,
     update_user as update_user_crud,
+    delete_user as delete_user_crud
 )
 
 # from backend.repositories import
-router = APIRouter()
+router = APIRouter(prefix="/users")
 
 
-@router.get("/users/{id}")
+@router.get("/{id}")
 async def get_all_users(id: int, session: SessionDep):
     return {"user": str(await session.get(User, id))}
 
 
-@router.post("/users")
+@router.post("")
 async def create_user(user: UserInputSchema, session: SessionDep) -> None:
     user = await create_user_crud(user, session)
     return f"user created {user}"
@@ -36,5 +37,7 @@ async def update_user(id: int, user: UserInputSchema, session: SessionDep):
 
 
 @router.delete("/{id}")
-async def delete_user(id: int) -> dict:
-    return {"deleted": True}
+async def delete_user(id: int, session: SessionDep) -> dict:
+    status = await delete_user_crud(id=id, session=session)
+    return {"deleted": status}
+    

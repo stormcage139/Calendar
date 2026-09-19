@@ -1,5 +1,3 @@
-
-
 from backend.core.config import get_logger
 from backend.models.user import User
 from backend.services.users import UserInputSchema
@@ -20,8 +18,10 @@ async def create_user(user_data: UserInputSchema, session: AsyncSession) -> User
     return new_user
 
 
-async def update_user(id: int, user_data: UserInputSchema, session: AsyncSession) -> User:
-    try: 
+async def update_user(
+    id: int, user_data: UserInputSchema, session: AsyncSession
+) -> User:
+    try:
         user = await session.get(User, id)
         for key, value in user_data.model_dump().items():
             print(key, value)
@@ -30,15 +30,14 @@ async def update_user(id: int, user_data: UserInputSchema, session: AsyncSession
         return user
     except Exception as ex:
         log.error(ex)
-        
-    
-    
-    
-async def delete_user(id: int, session: AsyncSession):
-    try: 
+
+
+async def delete_user(id: int, session: AsyncSession) -> bool:
+    try:
         user = await session.get(User, id)
         await session.delete(user)
         await session.commit()
+        return True
     except Exception as ex:
         log.error(ex)
-        
+        return False
