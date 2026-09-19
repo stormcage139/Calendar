@@ -1,10 +1,12 @@
 from .base import Base
 from .user import User
 from .event import Event
-from .friends import friend_to_friend
+from .friends import Friends
+from .event_members import EventMembers
 __all__ = (
     "Base",
     "User",
     "Event",
-    "friend_to_friend"
+    "Friends",
+    "EventMembers"
 )
