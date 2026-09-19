@@ -1,32 +1,49 @@
-# React + TypeScript + Vite
+# Вместе — frontend совместного календаря
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite. Страницы входа (`/#login`) и регистрации
+(`/#register`), адаптивная вёрстка, проверка полей, показ пароля, состояния
+загрузки, ошибки API и экран успешного входа. Календарь слева — иллюстрация,
+рабочая страница календаря пока не реализована.
 
-Currently, two official plugins are available:
+## Запуск
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Из каталога `frontend`:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Открыть адрес из вывода Vite (обычно `http://localhost:5173`). Для запросов
+нужен backend на `http://127.0.0.1:8000`. Vite проксирует `/api/*` к нему,
+убирая префикс `/api`, поэтому локально настройка CORS не нужна.
+
+```sh
+npm run build
+npm run lint
+```
+
+## API
+
+- Регистрация: `POST /users`, JSON `{ login, email, password }`.
+- Вход: `POST /token_test`, форма `username`, `password`.
+- Токен сохраняется в `sessionStorage` под ключом `calendar_access_token`;
+  выход удаляет его. Пароль frontend не сохраняет.
+- После регистрации показывается форма входа с заполненным логином.
+- Минимум 8 символов пароля при регистрации — проверка интерфейса;
+  серверу необходимо независимо обеспечивать свою политику паролей.
+
+Используется `/token_test`, поскольку существующий JSON-обработчик `/token`
+передаёт в `authenticate_user` содержимое `model_config` вместо логина и пароля.
+Существующий `POST /users` сохраняет пароль без хэширования, тогда как вход
+вызывает `verify_password`. До исправления backend полный сценарий регистрации
+и последующего входа может завершаться ошибкой. Backend в рамках этой задачи
+не изменялся. Клиент показывает успешный вход только после получения токена.
+
+## Развёртывание
+
+В production настройте reverse proxy `/api` на backend с удалением префикса.
+Прокси из `vite.config.ts` работает только с сервером разработки.
+Альтернатива — задать `VITE_API_URL` перед сборкой (см. `.env.example`);
+для другого origin backend должен разрешать CORS. Значения `VITE_*` публичны,
+секреты в них размещать нельзя.
