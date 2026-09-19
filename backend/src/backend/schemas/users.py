@@ -6,3 +6,5 @@ class UserInputSchema(BaseModel):
     email: str
     password: str
     
+    
+    

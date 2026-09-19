@@ -4,7 +4,7 @@ from fastapi import APIRouter
 
 from backend.api.deps import SessionDep
 from backend.models.user import User
-from backend.services.users import UserInputSchema
+from backend.schemas.users import UserInputSchema
 from backend.repositories.users import (
     create_user as create_user_crud,
     update_user as update_user_crud,

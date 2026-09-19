@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.user import User
 from backend.repositories.users import create_user, delete_user, update_user
-from backend.services.users import UserInputSchema
+from backend.schemas.users import UserInputSchema
 
 
 @pytest.mark.asyncio

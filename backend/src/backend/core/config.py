@@ -1,3 +1,4 @@
+from pwdlib import PasswordHash
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import logging
@@ -19,6 +20,11 @@ class DatabaseSettings(BaseModel):
     echo: bool = False
     pool_pre_ping: bool = True
 
+class Auth(BaseModel):
+    secret_key: str = "02395560f790d689584b884c02827346b164017d40307908c989d746d7beff8d"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    dummy_hash: str = "randomtexttofuckhackerslolyoucantdosmthwiththis"
 
 class Config(BaseModel):
     model_config = SettingsConfigDict(
@@ -27,6 +33,7 @@ class Config(BaseModel):
         extra="ignore",
     )
     db: DatabaseSettings = DatabaseSettings()
+    auth: Auth = Auth()
 
 
 config = Config()

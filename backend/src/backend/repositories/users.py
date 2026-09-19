@@ -1,10 +1,22 @@
+
+
 from backend.core.config import get_logger
 from backend.models.user import User
-from backend.services.users import UserInputSchema
+from backend.schemas.users import UserInputSchema
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 log = get_logger(__name__)
 
+
+async def get_user_by_login(login: str, session: AsyncSession) -> User | None:
+    try: 
+        stmt = select(User).where(User.login == login)
+        user = await session.execute(stmt)
+        return user.scalar()
+    except Exception as ex:
+        log.error(ex)
+        await session.rollback()
 
 async def create_user(user_data: UserInputSchema, session: AsyncSession) -> User:
     try:
