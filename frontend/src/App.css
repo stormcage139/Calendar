@@ -573,6 +573,13 @@ form input:focus {
   vertical-align: middle;
   margin-right: 6px;
 }
+.calendar-demo-link {
+  display: block;
+  width: fit-content;
+  margin: 12px auto 0;
+  color: #52653d;
+  font-size: 11px;
+}
 .message {
   padding: 11px 13px;
   border-radius: 6px;

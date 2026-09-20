@@ -449,6 +449,9 @@ function App() {
         <div className="panel-bottom">
           <span className="little-star">✳</span> Оставьте место для хороших
           планов.
+          <a className="calendar-demo-link" href="#calendar">
+            Посмотреть календарь →
+          </a>
         </div>
       </section>
     </main>
