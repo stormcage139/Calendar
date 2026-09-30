@@ -36,7 +36,9 @@ async def send_friend_request(
     new_friend_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
     session: SessionDep,
-) -> list[Any] | None:
+) -> list[Any] | dict | None:
+    if new_friend_id == current_user.id:
+        return {"error": "You cant be friend with yourself"}
     log.info("Request sended")
     await add_friend(current_user.id, new_friend_id, session=session)
 
