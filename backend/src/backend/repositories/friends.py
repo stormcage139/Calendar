@@ -35,6 +35,8 @@ async def get_all_friends_ids(current_user_id: int, session: AsyncSession) -> li
         return
         # TODO: add logic
     for couple in friends_list:
+        if couple.accepted_at == None:
+            continue
         friends_ids += [couple.user1_id, couple.user2_id]
     if current_user_id in friends_ids:
         friends_ids.remove(current_user_id)
@@ -58,9 +60,10 @@ async def add_friend(requester_id1: int, user_id2: int, session: AsyncSession) -
         user_id2=user_id2,
         session=session,
     )
+    log.info("checked for friend request: %s", friend_request)
     if friend_request is not None:
         log.info("Friend request already created...")
-        if requester_id1 == friend_request.requested_by:
+        if requester_id1 != friend_request.requested_by:
             log.info("Already sended request")
             log.info("Accepting")
             friend_request.accepted_at = datetime.now(timezone.utc)
@@ -77,10 +80,13 @@ async def add_friend(requester_id1: int, user_id2: int, session: AsyncSession) -
         log.info(
             "Пользователя 2, создается инвайт линк"
         )  # TODO: убрать отладочный принт
+        ordered_users_ids = sorted([
+            requester_id1, user_id2
+        ])
         friends = Friends(
+            user1_id=ordered_users_ids[0],
+            user2_id=ordered_users_ids[1],
             requested_by=requester_id1,
-            user1_id=requester_id1,
-            user2_id=user_id2,
         )
         try:
             session.add(friends)
@@ -107,12 +113,16 @@ async def get_friend_request_if_exists(
         return friend_status
     return None
 
-async def remove_friend(current_user_id: int, friend_id: int, session: SessionDep) -> bool:
+
+async def remove_friend(
+    current_user_id: int, friend_id: int, session: SessionDep
+) -> bool:
     sorted_user_ids: list[int] = sorted([current_user_id, friend_id])
     stmt = select(Friends).where(
-        (Friends.user1_id == sorted_user_ids[0]) | (Friends.user2_id == sorted_user_ids[1])
+        (Friends.user1_id == sorted_user_ids[0])
+        | (Friends.user2_id == sorted_user_ids[1])
     )
-    
+
     try:
         friend_link = await session.execute(stmt)
         friend_link = friend_link.scalar_one_or_none()
@@ -121,4 +131,3 @@ async def remove_friend(current_user_id: int, friend_id: int, session: SessionDe
         return True
     except Exception as ex:
         log.error(ex)
-
