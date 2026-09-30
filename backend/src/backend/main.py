@@ -4,7 +4,7 @@ import uvicorn
 from backend.api.v1.routers import user_router
 from backend.api.v1.routers import auth_router
 from backend.api.v1.routers import friends_router
-from backend.core.config import get_logger
+from backend.core.config import get_logger, config
 
 log = get_logger(__name__)
 
@@ -21,6 +21,7 @@ def pong() -> str:
 
 if __name__ == "__main__":
     log.info("Application started")
+    log.info("current db is %s", config.db.url)
     uvicorn.run(
         "main:app",
         reload=True,
