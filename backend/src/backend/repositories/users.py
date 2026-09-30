@@ -32,7 +32,7 @@ async def create_user(user_data: UserInputSchema, session: AsyncSession) -> User
 
 async def update_user(
     id: int, user_data: UserInputSchema, session: AsyncSession
-) -> User:
+) -> User | None:
     try:
         user = await session.get(User, id)
         for key, value in user_data.model_dump().items():

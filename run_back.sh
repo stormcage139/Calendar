@@ -1,0 +1,1 @@
+(cd ./backend/ && uv run src/backend/main.py)
