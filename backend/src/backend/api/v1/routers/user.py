@@ -8,7 +8,7 @@ from backend.schemas.users import UserInputSchema
 from backend.repositories.users import (
     create_user as create_user_crud,
     update_user as update_user_crud,
-    delete_user as delete_user_crud
+    delete_user as delete_user_crud,
 )
 
 # from backend.repositories import
@@ -21,14 +21,14 @@ async def get_all_users(id: int, session: SessionDep):
 
 
 @router.post("")
-async def create_user(user: UserInputSchema, session: SessionDep) -> None:
-    user = await create_user_crud(user, session)
-    return f"user created {user}"
+async def create_user(user: UserInputSchema, session: SessionDep) -> None | str:
+    new_user = await create_user_crud(user, session)
+    return f"user created {new_user}"
 
 
 @router.patch("/{id}")
 async def update_user(id: int, user: UserInputSchema, session: SessionDep):
-    user = await update_user_crud(
+    updated_user = await update_user_crud(
         id=id,
         user_data=user,
         session=session,
@@ -40,4 +40,3 @@ async def update_user(id: int, user: UserInputSchema, session: SessionDep):
 async def delete_user(id: int, session: SessionDep) -> dict:
     status = await delete_user_crud(id=id, session=session)
     return {"deleted": status}
-    

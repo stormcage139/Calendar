@@ -66,6 +66,9 @@ async def test_login_for_access_token(
     return Token(access_token=access_token, token_type="bearer")
 
 
+
+
+
 @router.post("/token")
 async def login_for_access_token(
     form_data: UserAuthSchema,

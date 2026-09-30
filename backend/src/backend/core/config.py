@@ -25,7 +25,7 @@ class Auth(BaseModel):
     secret_key: str = "02395560f790d689584b884c02827346b164017d40307908c989d746d7beff8d"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-    dummy_hash: str = "randomtexttofuckhackerslolyoucantdosmthwiththisshit"
+    dummy_hash: str = "$argon2id$v=19$m=65536,t=3,p=4$riAZtA49oiHH6zTqgt2SuA$kjhZuLDrve62y5KlF6xEXjTaS3WYP4iPKDVLkuQEMoU"
 
 class Config(BaseModel):
     model_config = SettingsConfigDict(

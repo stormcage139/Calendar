@@ -3,12 +3,16 @@ import uvicorn
 
 from backend.api.v1.routers import user_router
 from backend.api.v1.routers import auth_router
+from backend.api.v1.routers import friends_router
+from backend.core.config import get_logger
+
+log = get_logger(__name__)
 
 app = FastAPI()
 
 app.include_router(user_router, tags=["users"])
 app.include_router(auth_router, tags=["auth"])
-
+app.include_router(friends_router, tags=["friends"], prefix="/friends")
 
 @app.get("/ping")
 def pong() -> str:
@@ -16,6 +20,7 @@ def pong() -> str:
 
 
 if __name__ == "__main__":
+    log.info("Application started")
     uvicorn.run(
         "main:app",
         reload=True,
