@@ -38,8 +38,10 @@ async def get_all_friends_ids(current_user_id: int, session: AsyncSession) -> li
         if couple.accepted_at == None:
             continue
         friends_ids += [couple.user1_id, couple.user2_id]
+
     if current_user_id in friends_ids:
         friends_ids.remove(current_user_id)
+
     log.info(friends_ids)
     return friends_ids
 
@@ -80,9 +82,7 @@ async def add_friend(requester_id1: int, user_id2: int, session: AsyncSession) -
         log.info(
             "Пользователя 2, создается инвайт линк"
         )  # TODO: убрать отладочный принт
-        ordered_users_ids = sorted([
-            requester_id1, user_id2
-        ])
+        ordered_users_ids = sorted([requester_id1, user_id2])
         friends = Friends(
             user1_id=ordered_users_ids[0],
             user2_id=ordered_users_ids[1],
@@ -131,3 +131,16 @@ async def remove_friend(
         return True
     except Exception as ex:
         log.error(ex)
+
+
+async def get_all_friends_requests(current_user_id: int, session: SessionDep):
+    stmt = select(Friends).where((Friends.user1_id == current_user_id) | (Friends.user2_id == current_user_id) ) #.join(User)
+    friend_requests = await session.execute(stmt)
+    all_requests = []
+    for couple in list(friend_requests.scalars().all()):
+        friend_id = couple.user1_id if couple.user1_id != current_user_id else couple.user2_id
+        friend_data = (friend_id, couple.accepted_at)
+        log.info("couple: %s", friend_data)
+        all_requests.append(friend_data)
+    return all_requests
+
