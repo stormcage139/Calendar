@@ -1,15 +1,19 @@
-from typing import Annotated, Any 
+from typing import Annotated, Any
 
+from fastapi.exceptions import HTTPException
+from starlette.status import HTTP_404_NOT_FOUND
 from backend.api.v1.routers.auth import get_current_user
 from backend.repositories.friends import add_friend, remove_friend
 from fastapi import APIRouter, Depends
 from backend.repositories.friends import (
     get_all_friends as get_all_friends_crud,
+    get_all_friends_requests as get_all_friends_requests_crud,
 )
 from backend.api.deps import SessionDep
 from backend.models.user import User
 from backend.schemas.auth import UserOutSchema
 from backend.core.config import get_logger
+from backend.schemas.friends import FriendRequestSchema, FriendSchema
 
 log = get_logger(__name__)
 router = APIRouter()
@@ -49,6 +53,27 @@ async def delete_friend(
     friend_id: int,
     session: SessionDep,
 ):
-    status: bool = await remove_friend(current_user_id=current_user.id, friend_id=friend_id, session=session)
+    status: bool = await remove_friend(
+        current_user_id=current_user.id, friend_id=friend_id, session=session
+    )
     return status
     # TODO: add logic
+
+
+@router.get("/requests")
+async def get_all_friend_requests(
+    session: SessionDep,
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[FriendRequestSchema]:
+    friend_requests = await get_all_friends_requests_crud(
+        current_user_id=current_user.id, session=session
+    )
+    if friend_requests is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+    friend_requests_results: list[FriendRequestSchema] = []
+    for status in friend_requests:
+        #friend = FriendSchema.model_validate(status[0])
+        friend_request = FriendRequestSchema(user=status[0], accepted=True, accepted_date=status[1]) 
+        friend_requests_results.append(friend_request)
+    return friend_requests_results
+        
