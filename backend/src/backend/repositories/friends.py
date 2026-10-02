@@ -103,8 +103,10 @@ async def get_friend_request_if_exists(
     # friend_status = await session.get(Friends, (user_id1, user_id2))
 
     stmt = select(Friends).where(
-        (Friends.user1_id == user_id1) | (Friends.user2_id == user_id2)
+        (Friends.user1_id == user_id1) & (Friends.user2_id == user_id2)
     )
+    log.info("user1: %s, user2: %s", user_id1, user_id2)
+    # return
     friend_status = await session.execute(stmt)
     friend_status = friend_status.scalar_one_or_none()
     log.info("finded friends %s", friend_status)
@@ -134,13 +136,19 @@ async def remove_friend(
 
 
 async def get_all_friends_requests(current_user_id: int, session: SessionDep):
-    stmt = select(Friends).where((Friends.user1_id == current_user_id) | (Friends.user2_id == current_user_id) ) #.join(User)
-    friend_requests = await session.execute(stmt)
+    stmt = select(Friends).where(
+        (Friends.user1_id == current_user_id) | (Friends.user2_id == current_user_id)
+    )  # .join(User)
+    try:
+        friend_requests = await session.execute(stmt)
+    except Exception as ex:
+        log.error(ex)
     all_requests = []
     for couple in list(friend_requests.scalars().all()):
-        friend_id = couple.user1_id if couple.user1_id != current_user_id else couple.user2_id
+        friend_id = (
+            couple.user1_id if couple.user1_id != current_user_id else couple.user2_id
+        )
         friend_data = (friend_id, couple.accepted_at)
         log.info("couple: %s", friend_data)
         all_requests.append(friend_data)
     return all_requests
-
