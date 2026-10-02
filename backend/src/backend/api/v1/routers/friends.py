@@ -40,12 +40,12 @@ async def send_friend_request(
     new_friend_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
     session: SessionDep,
-) -> list[Any] | dict | None:
+) -> bool | dict:
     if new_friend_id == current_user.id:
-        return {"error": "You cant be friend with yourself"}
-    log.info("Request sended")
-    await add_friend(current_user.id, new_friend_id, session=session)
-
+        return {"error": "You cant be fr end with yourself"}
+    log.info("trying to send request...")
+    status = await add_friend(current_user.id, new_friend_id, session=session)
+    return status 
 
 @router.delete("/{friend_id}")
 async def delete_friend(
@@ -73,7 +73,9 @@ async def get_all_friend_requests(
     friend_requests_results: list[FriendRequestSchema] = []
     for status in friend_requests:
         #friend = FriendSchema.model_validate(status[0])
-        friend_request = FriendRequestSchema(user=status[0], accepted=True, accepted_date=status[1]) 
+        log.info("id: %s, accepted_date : %s", status[0], status[1])
+        # raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+        friend_request = FriendRequestSchema(user=status[0],  accepted_date=status[1])
         friend_requests_results.append(friend_request)
     return friend_requests_results
         

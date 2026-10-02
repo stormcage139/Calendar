@@ -1,9 +1,10 @@
 
 
 from backend.core.config import get_logger
+from backend.core.security import get_password_hash, password_hash
 from backend.models.user import User
 from backend.schemas.users import UserInputSchema
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 log = get_logger(__name__)
@@ -20,6 +21,7 @@ async def get_user_by_login(login: str, session: AsyncSession) -> User | None:
 
 async def create_user(user_data: UserInputSchema, session: AsyncSession) -> User:
     try:
+        user_data.password = get_password_hash(user_data.password)
         new_user = User(**user_data.model_dump())
         session.add(new_user)
         await session.commit()
@@ -46,8 +48,8 @@ async def update_user(
 
 async def delete_user(id: int, session: AsyncSession) -> bool:
     try:
-        user = await session.get(User, id)
-        await session.delete(user)
+        stmt = delete(User).where(User.id == id)
+        await session.execute(stmt)
         await session.commit()
         return True
     except Exception as ex:
