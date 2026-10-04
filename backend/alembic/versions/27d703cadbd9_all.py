@@ -1,8 +1,8 @@
 """all
 
-Revision ID: 27de2351802e
+Revision ID: 27d703cadbd9
 Revises: 
-Create Date: 2026-10-02 12:44:41.098567
+Create Date: 2026-10-03 13:19:01.808056
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '27de2351802e'
+revision: str = '27d703cadbd9'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -40,22 +40,19 @@ def upgrade() -> None:
     )
     op.create_table('friends',
     sa.Column('requested_by', sa.Integer(), nullable=False),
-    sa.Column('user1_id', sa.Integer(), nullable=False),
-    sa.Column('user2_id', sa.Integer(), nullable=False),
+    sa.Column('friend_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('accepted_at', sa.DateTime(timezone=True), nullable=True),
-    sa.CheckConstraint('user1_id < user2_id', name='ck_friends_order'),
+    sa.ForeignKeyConstraint(['friend_id'], ['users.id'], ),
     sa.ForeignKeyConstraint(['requested_by'], ['users.id'], ),
-    sa.ForeignKeyConstraint(['user1_id'], ['users.id'], ),
-    sa.ForeignKeyConstraint(['user2_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('user1_id', 'user2_id')
+    sa.PrimaryKeyConstraint('requested_by', 'friend_id')
     )
     op.create_table('event_members',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('event', sa.Integer(), nullable=False),
+    sa.Column('event_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('invitestatus', sa.Enum('INVITED', 'JOINED', name='event_invite_status'), nullable=False),
-    sa.ForeignKeyConstraint(['event'], ['events.id'], ),
+    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
