@@ -1,8 +1,8 @@
 """all
 
-Revision ID: 27d703cadbd9
+Revision ID: 18a11ee23bc2
 Revises: 
-Create Date: 2026-10-03 13:19:01.808056
+Create Date: 2026-10-04 20:21:46.952215
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '27d703cadbd9'
+revision: str = '18a11ee23bc2'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -32,10 +32,10 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(length=128), nullable=False),
     sa.Column('online', sa.Boolean(), server_default='0', nullable=False),
-    sa.Column('creator', sa.Integer(), nullable=False),
+    sa.Column('creator_id', sa.Integer(), nullable=False),
     sa.Column('deadline', sa.Date(), nullable=False),
     sa.Column('status', sa.Enum('CREATED', 'IN_PROCESS', 'ENDED', name='event_status'), nullable=False),
-    sa.ForeignKeyConstraint(['creator'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['creator_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('friends',

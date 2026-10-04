@@ -69,7 +69,7 @@ async def get_all_friend_requests(
         current_user_id=current_user.id, session=session
     )
     if friend_requests is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+         raise HTTPException(status_code=HTTP_404_NOT_FOUND)
     return friend_requests
     # friend_requests_results: list[FriendRequestSchema] = []
     # for status in friend_requests:
