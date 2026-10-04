@@ -70,12 +70,13 @@ async def get_all_friend_requests(
     )
     if friend_requests is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND)
-    friend_requests_results: list[FriendRequestSchema] = []
-    for status in friend_requests:
-        #friend = FriendSchema.model_validate(status[0])
-        log.info("id: %s, accepted_date : %s", status[0], status[1])
-        # raise HTTPException(status_code=HTTP_404_NOT_FOUND)
-        friend_request = FriendRequestSchema(user=status[0],  accepted_date=status[1])
-        friend_requests_results.append(friend_request)
-    return friend_requests_results
+    return friend_requests
+    # friend_requests_results: list[FriendRequestSchema] = []
+    # for status in friend_requests:
+    #     #friend = FriendSchema.model_validate(status[0])
+    #     log.info("id: %s, accepted_date : %s", status[0], status[1])
+    #     # raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+    #     friend_request = FriendRequestSchema(user=status[0],  accepted_date=status[1])
+    #     friend_requests_results.append(friend_request)
+    # return friend_requests_results
         

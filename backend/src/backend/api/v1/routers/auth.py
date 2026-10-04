@@ -13,7 +13,7 @@ from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 from pydantic import BaseModel
 
-from backend.core.config import config
+from backend.core.config import config, get_logger
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -22,7 +22,7 @@ credentials_exception = HTTPException(
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token_test")
-
+log = get_logger(__name__)
 router = APIRouter()
 
 
@@ -52,7 +52,10 @@ async def test_login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: SessionDep,
 ) -> Token:
-    user: User = await authenticate_user(login=form_data.username, password=form_data.password, session=session)
+    try:
+        user: User = await authenticate_user(login=form_data.username, password=form_data.password, session=session)
+    except Exception as ex:
+        log.error(ex)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

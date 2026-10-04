@@ -6,6 +6,8 @@ from backend.models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.schemas.friends import FriendRequestSchema
+
 log = get_logger(__name__)
 
 
@@ -21,13 +23,9 @@ async def get_all_friends(
 
 async def get_all_friends_ids(current_user_id: int, session: AsyncSession) -> list[int]:
     log.info("current_user_id %s", current_user_id)
-    stmt = (
-        select(Friends)
-        .where(
-            (Friends.user1_id == current_user_id)
-            | (Friends.user2_id == current_user_id)
-        )
-        .where(Friends.accepted_at != None)
+    stmt = select(Friends).where(
+        (Friends.requested_by == current_user_id)
+        | (Friends.friend_id == current_user_id)
     )
     friends_list = (await session.execute(stmt)).scalars().all()
     friends_ids = []
@@ -37,7 +35,7 @@ async def get_all_friends_ids(current_user_id: int, session: AsyncSession) -> li
     for couple in friends_list:
         if couple.accepted_at == None:
             continue
-        friends_ids += [couple.user1_id, couple.user2_id]
+        friends_ids += [couple.requested_by, couple.friend_id]
 
     if current_user_id in friends_ids:
         friends_ids.remove(current_user_id)
@@ -56,10 +54,10 @@ async def get_friends_by_ids(
     return users
 
 
-async def add_friend(requester_id1: int, user_id2: int, session: AsyncSession) -> bool:
+async def add_friend(requester_id1: int, friend_id: int, session: AsyncSession) -> bool:
     friend_request = await get_friend_request_if_exists(
         user_id1=requester_id1,
-        user_id2=user_id2,
+        user_id2=friend_id,
         session=session,
     )
     log.info("checked for friend request: %s", friend_request)
@@ -71,29 +69,28 @@ async def add_friend(requester_id1: int, user_id2: int, session: AsyncSession) -
             friend_request.accepted_at = datetime.now(timezone.utc)
             try:
                 await session.commit()
+                return True
             except Exception as ex:
                 log.error(ex)
+                return False
+        return False
         # if friend_request.accepted_at == None:
         # if friend_request.
         # TODO: ADD LOGIC IF REQUEST IS CREATED
-    stmt = select(User).where(User.id.in_([requester_id1, user_id2]))
-    result = await session.execute(stmt)
-    if len(result.all()) == 2:
-        log.info(
-            "Пользователя 2, создается инвайт линк"
-        )  # TODO: убрать отладочный принт
-        ordered_users_ids = sorted([requester_id1, user_id2])
-        friends = Friends(
-            user1_id=ordered_users_ids[0],
-            user2_id=ordered_users_ids[1],
-            requested_by=requester_id1,
-        )
-        try:
-            session.add(friends)
-            await session.commit()
-            return True
-        except Exception as ex:
-            log.error(ex)
+    # stmt = select(User).where(User.id.in_([requester_id1, friend_id]))
+    # result = await session.execute(stmt)
+    # if len(result.all()) == 2:
+    #     log.info(
+    #         "Пользователя 2, создается инвайт линк"
+    #     )  # TODO: убрать отладочный принт
+    #     ordered_users_ids = sorted([requester_id1, friend_id])
+    friends = Friends(requested_by=requester_id1, friend_id=friend_id)
+    try:
+        session.add(friends)
+        await session.commit()
+        return True
+    except Exception as ex:
+        log.error(ex)
     return False
 
 
@@ -103,7 +100,10 @@ async def get_friend_request_if_exists(
     # friend_status = await session.get(Friends, (user_id1, user_id2))
 
     stmt = select(Friends).where(
-        (Friends.user1_id == user_id1) & (Friends.user2_id == user_id2)
+        (
+            Friends.requested_by.in_([user_id1, user_id2])
+            & (Friends.friend_id.in_([user_id1, user_id2]))
+        )
     )
     log.info("user1: %s, user2: %s", user_id1, user_id2)
     # return
@@ -121,8 +121,10 @@ async def remove_friend(
 ) -> bool:
     sorted_user_ids: list[int] = sorted([current_user_id, friend_id])
     stmt = select(Friends).where(
-        (Friends.user1_id == sorted_user_ids[0])
-        | (Friends.user2_id == sorted_user_ids[1])
+        (
+            Friends.requested_by.in_([current_user_id, friend_id])
+            & (Friends.friend_id.in_([current_user_id, friend_id]))
+        )
     )
 
     try:
@@ -133,11 +135,13 @@ async def remove_friend(
         return True
     except Exception as ex:
         log.error(ex)
+        return False
 
 
 async def get_all_friends_requests(current_user_id: int, session: SessionDep):
     stmt = select(Friends).where(
-        (Friends.user1_id == current_user_id) | (Friends.user2_id == current_user_id)
+        (Friends.requested_by == current_user_id)
+        | (Friends.friend_id == current_user_id)
     )  # .join(User)
     try:
         friend_requests = await session.execute(stmt)
@@ -145,10 +149,11 @@ async def get_all_friends_requests(current_user_id: int, session: SessionDep):
         log.error(ex)
     all_requests = []
     for couple in list(friend_requests.scalars().all()):
-        friend_id = (
-            couple.user1_id if couple.user1_id != current_user_id else couple.user2_id
+        friend_request = FriendRequestSchema(
+            from_user=couple.requested_by,
+            to_user=couple.friend_id,
+            accepted_date=couple.accepted_at,
         )
-        friend_data = (friend_id, couple.accepted_at)
-        log.info("couple: %s", friend_data)
-        all_requests.append(friend_data)
+        log.info("couple: %s", friend_request)
+        all_requests.append(friend_request)
     return all_requests

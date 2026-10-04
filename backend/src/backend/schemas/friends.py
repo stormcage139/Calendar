@@ -12,6 +12,7 @@ class FriendSchema(BaseModel):
 class FriendRequestSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     # user:FriendSchema
-    user: int
+    from_user: int
+    to_user: int
     # accepted: bool = False 
     accepted_date: datetime.datetime| None = None
