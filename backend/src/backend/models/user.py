@@ -5,8 +5,8 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
-if TYPE_CHECKING:
-    from backend.models import EventMember
+# if TYPE_CHECKING:
+from .event_members import EventMember
 
 
 from .base import Base

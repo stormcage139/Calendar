@@ -7,10 +7,12 @@ from sqlalchemy import Integer, String, ForeignKey, Boolean, Date
 from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.orm import mapped_column
 from sqlalchemy import Enum as SQLEnum
+
 from .base import Base
 
 
 if TYPE_CHECKING:
+    from .event import Event
     from .user import User
 
 
@@ -32,3 +34,4 @@ class EventMember(Base):
         default=EventMemberInviteStatus.INVITED,
     )
     user: Mapped[list["User"]] = relationship(back_populates="event_member")
+    event: Mapped["Event"] = relationship(back_populates="members")

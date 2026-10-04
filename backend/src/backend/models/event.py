@@ -1,12 +1,11 @@
 from datetime import date
 from enum import Enum
 
-
-from sqlalchemy import Integer, String, ForeignKey, Boolean, Date
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, String
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from .event_members import EventMember
 
 from .base import Base
 
@@ -28,9 +27,11 @@ class Event(Base):
         server_default="0",
         default=False,
     )
-    creator: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     deadline: Mapped[date] = mapped_column(Date())
     status: Mapped[EventStatus] = mapped_column(
         SQLEnum(EventStatus, name="event_status"),
         default=EventStatus.CREATED,
     )
+    members: Mapped[list["EventMember"]] = relationship(back_populates="event")
+
