@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { login, register } from "./api/auth";
+import { getCurrentUser, login, register } from "./api/auth";
+import type { User } from "./api/auth";
+import { clearSession, errorMessage, hasSession, SESSION_EXPIRED_EVENT } from "./api/client";
+import Dashboard from "./Dashboard";
 import "./App.css";
 
 type Mode = "login" | "register";
@@ -112,8 +115,53 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [signedIn, setSignedIn] = useState("");
+  const [signedIn, setSignedIn] = useState<User | null>(null);
+  const [checkingSession, setCheckingSession] = useState(hasSession);
+  const [sessionError, setSessionError] = useState("");
   const [loginName, setLoginName] = useState("");
+
+  const restoreSession = useCallback(async (signal?: AbortSignal) => {
+    setCheckingSession(true);
+    setSessionError("");
+    try {
+      const user = await getCurrentUser(signal);
+      if (!signal?.aborted) setSignedIn(user);
+    } catch (cause) {
+      if (!signal?.aborted && hasSession()) setSessionError(errorMessage(cause));
+    } finally {
+      if (!signal?.aborted) setCheckingSession(false);
+    }
+  }, []);
+
+  function logout(message = "Вы вышли из аккаунта.") {
+    clearSession();
+    setSignedIn(null);
+    setSessionError("");
+    setCheckingSession(false);
+    setError("");
+    setMode("login");
+    window.history.replaceState(null, "", "#login");
+    setNotice(message);
+  }
+
+  useEffect(() => {
+    const controller = new AbortController();
+    function expired() {
+      setSignedIn(null);
+      setSessionError("");
+      setCheckingSession(false);
+      setMode("login");
+      window.history.replaceState(null, "", "#login");
+      setNotice("Сессия истекла. Войдите снова.");
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, expired);
+    // oxlint-disable-next-line react/set-state-in-effect -- Synchronize the saved session with the backend on mount.
+    if (hasSession()) void restoreSession(controller.signal);
+    return () => {
+      controller.abort();
+      window.removeEventListener(SESSION_EXPIRED_EVENT, expired);
+    };
+  }, [restoreSession]);
 
   useEffect(() => {
     function syncMode() {
@@ -127,8 +175,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    document.title = `${mode === "login" ? "Вход" : "Регистрация"} · Вместе`;
-  }, [mode]);
+    if (!signedIn) document.title = `${mode === "login" ? "Вход" : "Регистрация"} · Вместе`;
+  }, [mode, signedIn]);
 
   function changeMode(next: Mode) {
     window.location.hash = next;
@@ -167,7 +215,8 @@ function App() {
       } else {
         await login(username, password);
         form.reset();
-        setSignedIn(username);
+        setLoginName(username);
+        await restoreSession();
       }
     } catch (cause) {
       setError(
@@ -179,6 +228,20 @@ function App() {
       setBusy(false);
     }
   }
+
+  if (checkingSession || sessionError) {
+    return <main className="session-panel"><div>
+      <span className="eyebrow">ВМЕСТЕ · ВАШЕ ПРОСТРАНСТВО</span>
+      <h2>{checkingSession ? "Открываем календарь…" : "Не удалось загрузить профиль"}</h2>
+      {checkingSession ? <p className="form-description" role="status">Проверяем вашу сессию.</p> : <>
+        <div className="message error" role="alert">{sessionError}</div>
+        <button className="primary-button" onClick={() => void restoreSession()}>Попробовать снова <span>↻</span></button>
+        <button className="text-button" onClick={() => logout()}>Вернуться ко входу</button>
+      </>}
+    </div></main>;
+  }
+
+  if (signedIn) return <Dashboard user={signedIn} onLogout={logout} />;
 
   return (
     <main className="auth-layout">
@@ -241,214 +304,191 @@ function App() {
       </section>
 
       <section className="form-panel" aria-label="Личный кабинет">
-        {!signedIn && (
-          <div className="top-prompt">
-            {mode === "login" ? "Пока нет аккаунта?" : "Уже есть аккаунт?"}
+        <div className="top-prompt">
+          {mode === "login" ? "Пока нет аккаунта?" : "Уже есть аккаунт?"}
+          <button
+            disabled={busy}
+            onClick={() =>
+              changeMode(mode === "login" ? "register" : "login")
+            }
+          >
+            {mode === "login" ? "Зарегистрироваться" : "Войти"} <span>↗</span>
+          </button>
+        </div>
+        <div className="form-content">
+          <div className="welcome-icon" aria-hidden="true">
+            {mode === "login" ? "↳" : "+"}
+          </div>
+          <span className="eyebrow form-eyebrow">
+            {mode === "login" ? "РАДЫ ВАС ВИДЕТЬ" : "НАЧНЁМ ПЛАНИРОВАТЬ"}
+          </span>
+          <h2>
+            {mode === "login" ? "С возвращением." : "Всё начинается с вас."}
+          </h2>
+          <p className="form-description">
+            {mode === "login"
+              ? "Войдите, чтобы ваши планы снова были под рукой."
+              : "Создайте аккаунт. Для ваших планов и ваших людей."}
+          </p>
+          <div className="mode-switch" aria-label="Способ авторизации">
             <button
+              type="button"
+              aria-pressed={mode === "login"}
               disabled={busy}
-              onClick={() =>
-                changeMode(mode === "login" ? "register" : "login")
-              }
+              onClick={() => changeMode("login")}
             >
-              {mode === "login" ? "Зарегистрироваться" : "Войти"} <span>↗</span>
+              Вход
+            </button>
+            <button
+              type="button"
+              aria-pressed={mode === "register"}
+              disabled={busy}
+              onClick={() => changeMode("register")}
+            >
+              Регистрация
             </button>
           </div>
-        )}
-        <div className="form-content">
-          {signedIn ? (
-            <div className="success-panel">
-              <span className="welcome-icon">✓</span>
-              <span className="eyebrow">ВЫ ВОШЛИ В АККАУНТ</span>
-              <h2>Привет, {signedIn}!</h2>
-              <p className="form-description">
-                Авторизация прошла успешно. Ваше пространство для общих планов
-                скоро появится здесь.
-              </p>
-              <button
-                className="primary-button"
-                onClick={() => {
-                  sessionStorage.removeItem("calendar_access_token");
-                  setSignedIn("");
-                  setNotice("Вы вышли из аккаунта.");
-                }}
-              >
-                Выйти из аккаунта <span>↗</span>
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="welcome-icon" aria-hidden="true">
-                {mode === "login" ? "↳" : "+"}
-              </div>
-              <span className="eyebrow form-eyebrow">
-                {mode === "login" ? "РАДЫ ВАС ВИДЕТЬ" : "НАЧНЁМ ПЛАНИРОВАТЬ"}
-              </span>
-              <h2>
-                {mode === "login" ? "С возвращением." : "Всё начинается с вас."}
-              </h2>
-              <p className="form-description">
-                {mode === "login"
-                  ? "Войдите, чтобы ваши планы снова были под рукой."
-                  : "Создайте аккаунт. Для ваших планов и ваших людей."}
-              </p>
-              <div className="mode-switch" aria-label="Способ авторизации">
-                <button
-                  type="button"
-                  aria-pressed={mode === "login"}
-                  disabled={busy}
-                  onClick={() => changeMode("login")}
-                >
-                  Вход
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={mode === "register"}
-                  disabled={busy}
-                  onClick={() => changeMode("register")}
-                >
-                  Регистрация
-                </button>
-              </div>
-              <form key={mode} onSubmit={handleSubmit} aria-busy={busy}>
-                <fieldset disabled={busy}>
-                  <label htmlFor="login">Логин</label>
+          <form key={mode} onSubmit={handleSubmit} aria-busy={busy}>
+            <fieldset disabled={busy}>
+              <label htmlFor="login">Логин</label>
+              <input
+                id="login"
+                name="login"
+                autoComplete="username"
+                placeholder="Ваш логин"
+                maxLength={64}
+                required
+                defaultValue={loginName}
+              />
+              {mode === "register" && (
+                <>
+                  <label htmlFor="email">Электронная почта</label>
                   <input
-                    id="login"
-                    name="login"
-                    autoComplete="username"
-                    placeholder="Ваш логин"
-                    maxLength={64}
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    maxLength={128}
                     required
-                    defaultValue={loginName}
                   />
-                  {mode === "register" && (
-                    <>
-                      <label htmlFor="email">Электронная почта</label>
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="you@example.com"
-                        maxLength={128}
-                        required
-                      />
-                    </>
-                  )}
-                  <label htmlFor="password">Пароль</label>
-                  <div className="password-field">
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete={
-                        mode === "login" ? "current-password" : "new-password"
-                      }
-                      placeholder={
-                        mode === "login"
-                          ? "Введите пароль"
-                          : "Не менее 8 символов"
-                      }
-                      minLength={mode === "register" ? 8 : 1}
-                      required
+                </>
+              )}
+              <label htmlFor="password">Пароль</label>
+              <div className="password-field">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={
+                    mode === "login" ? "current-password" : "new-password"
+                  }
+                  placeholder={
+                    mode === "login"
+                      ? "Введите пароль"
+                      : "Не менее 8 символов"
+                  }
+                  minLength={mode === "register" ? 8 : 1}
+                  required
+                />
+                <button
+                  type="button"
+                  className="reveal-button"
+                  aria-label={
+                    showPassword ? "Скрыть пароль" : "Показать пароль"
+                  }
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
                     />
-                    <button
-                      type="button"
-                      className="reveal-button"
-                      aria-label={
-                        showPassword ? "Скрыть пароль" : "Показать пароль"
-                      }
-                      aria-pressed={showPassword}
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path
-                          d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        />
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="3"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        />
-                        {showPassword && (
-                          <path
-                            d="m3 3 18 18"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                          />
-                        )}
-                      </svg>
-                    </button>
-                  </div>
-                  {mode === "register" && (
-                    <>
-                      <label htmlFor="confirm">Повторите пароль</label>
-                      <input
-                        id="confirm"
-                        name="confirm"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        placeholder="Ещё раз, чтобы не ошибиться"
-                        required
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+                    {showPassword && (
+                      <path
+                        d="m3 3 18 18"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
                       />
-                    </>
-                  )}
-                  {error && (
-                    <div className="message error" role="alert">
-                      {error}
-                    </div>
-                  )}
-                  {notice && (
-                    <div className="message notice" role="status">
-                      {notice}
-                    </div>
-                  )}
-                  <button type="submit" className="primary-button">
-                    {busy ? (
-                      <>
-                        <span className="spinner" />
-                        {mode === "login" ? "Входим…" : "Создаём аккаунт…"}
-                      </>
-                    ) : (
-                      <>
-                        {mode === "login"
-                          ? "Войти в календарь"
-                          : "Создать аккаунт"}
-                        <span>→</span>
-                      </>
                     )}
-                  </button>
-                </fieldset>
-              </form>
-              <div className="form-footnote">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <rect
-                    x="6"
-                    y="10"
-                    width="12"
-                    height="10"
-                    rx="2"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M9 10V7a3 3 0 0 1 6 0v3m-3 4v2"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-                Ваше время — в вашем пространстве.
+                  </svg>
+                </button>
               </div>
-            </>
-          )}
+              {mode === "register" && (
+                <>
+                  <label htmlFor="confirm">Повторите пароль</label>
+                  <input
+                    id="confirm"
+                    name="confirm"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Ещё раз, чтобы не ошибиться"
+                    required
+                  />
+                </>
+              )}
+              {error && (
+                <div className="message error" role="alert">
+                  {error}
+                </div>
+              )}
+              {notice && (
+                <div className="message notice" role="status">
+                  {notice}
+                </div>
+              )}
+              <button type="submit" className="primary-button">
+                {busy ? (
+                  <>
+                    <span className="spinner" />
+                    {mode === "login" ? "Входим…" : "Создаём аккаунт…"}
+                  </>
+                ) : (
+                  <>
+                    {mode === "login"
+                      ? "Войти в календарь"
+                      : "Создать аккаунт"}
+                    <span>→</span>
+                  </>
+                )}
+              </button>
+            </fieldset>
+          </form>
+          <div className="form-footnote">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect
+                x="6"
+                y="10"
+                width="12"
+                height="10"
+                rx="2"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M9 10V7a3 3 0 0 1 6 0v3m-3 4v2"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+            </svg>
+            Ваше время — в вашем пространстве.
+          </div>
         </div>
         <div className="panel-bottom">
           <span className="little-star">✳</span> Оставьте место для хороших
           планов.
+          <a className="calendar-demo-link" href="#calendar">
+            Посмотреть календарь →
+          </a>
         </div>
       </section>
     </main>
