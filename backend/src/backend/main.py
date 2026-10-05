@@ -13,7 +13,7 @@ log = get_logger(__name__)
 
 app = FastAPI()
 
-app.include_router(user_router, tags=["users"])
+app.include_router(user_router, tags=["users_debug"])
 app.include_router(auth_router, tags=["auth"])
 app.include_router(friends_router, tags=["friends"], prefix="/friends")
 app.include_router(event_router, tags=["events"], prefix="/events")
