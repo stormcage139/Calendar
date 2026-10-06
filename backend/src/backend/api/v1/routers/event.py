@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from fastapi.exceptions import HTTPException
 from fastapi.security.http import HTTPBasic
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,6 +56,7 @@ async def crete_new_event(
             current_user_id=current_user.id,
             session=session,
         )
+        return True
     except Exception as ex:
-        log.error("error in router when creating new event")
+        log.error("error in router when creating new event, %s", ex)
         raise HTTPException(status_code=HTTP_503_SERVICE_UNAVAILABLE)

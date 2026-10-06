@@ -140,8 +140,11 @@ async def remove_friend(
 
 async def get_all_friends_requests(current_user_id: int, session: SessionDep):
     stmt = select(Friends).where(
-        (Friends.requested_by == current_user_id)
-        | (Friends.friend_id == current_user_id)
+        (
+            (Friends.requested_by == current_user_id)
+            | (Friends.friend_id == current_user_id)
+        )
+        & (Friends.accepted_at == None)
     )  # .join(User)
     try:
         friend_requests = await session.execute(stmt)
