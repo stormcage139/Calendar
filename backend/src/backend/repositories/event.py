@@ -53,6 +53,7 @@ async def create_event(
     session.add(new_event)
     try:
         await session.commit()
+        return new_event
     except Exception as ex:
         log.error("cant commit new event %s", ex)
         raise

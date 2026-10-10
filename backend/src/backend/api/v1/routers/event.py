@@ -49,14 +49,14 @@ async def crete_new_event(
     event: EventInputSchema,
     current_user: Annotated[User, Depends(get_current_user)],
     session: SessionDep,
-) -> Any:
+) -> EventOutputSchema:
     try:
-        await create_event_crud(
+        new_event = await create_event_crud(
             event=event,
             current_user_id=current_user.id,
             session=session,
         )
-        return True
+        return EventOutputSchema.model_validate(new_event)
     except Exception as ex:
         log.error("error in router when creating new event, %s", ex)
         raise HTTPException(status_code=HTTP_503_SERVICE_UNAVAILABLE)

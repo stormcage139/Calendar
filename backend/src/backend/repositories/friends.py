@@ -28,9 +28,9 @@ async def get_all_friends_ids(current_user_id: int, session: AsyncSession) -> li
         | (Friends.friend_id == current_user_id)
     )
     friends_list = (await session.execute(stmt)).scalars().all()
-    friends_ids = []
-    if friends_ids == None:
+    if friends_list == None:
         return
+    friends_ids = []
         # TODO: add logic
     for couple in friends_list:
         if couple.accepted_at == None:
@@ -138,7 +138,7 @@ async def remove_friend(
         return False
 
 
-async def get_all_friends_requests(current_user_id: int, session: SessionDep):
+async def get_all_friends_requests(current_user_id: int, session: SessionDep) -> list[Friends]:
     stmt = select(Friends).where(
         (
             (Friends.requested_by == current_user_id)
@@ -148,15 +148,8 @@ async def get_all_friends_requests(current_user_id: int, session: SessionDep):
     )  # .join(User)
     try:
         friend_requests = await session.execute(stmt)
+        return list(friend_requests.scalars().all())
     except Exception as ex:
         log.error(ex)
-    all_requests = []
-    for couple in list(friend_requests.scalars().all()):
-        friend_request = FriendRequestSchema(
-            from_user=couple.requested_by,
-            to_user=couple.friend_id,
-            accepted_date=couple.accepted_at,
-        )
-        log.info("couple: %s", friend_request)
-        all_requests.append(friend_request)
-    return all_requests
+        raise
+

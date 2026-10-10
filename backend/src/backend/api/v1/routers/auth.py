@@ -5,7 +5,7 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt.exceptions import InvalidTokenError
-from starlette.status import HTTP_409_CONFLICT
+from starlette.status import HTTP_409_CONFLICT, HTTP_500_INTERNAL_SERVER_ERROR
 
 from backend.api.deps import SessionDep
 from backend.api.v1.routers.user import create_user_crud
@@ -51,12 +51,14 @@ log = get_logger(__name__)
 router = APIRouter()
 
 @router.post("/register")
-async def register(user: UserInputSchema, session: SessionDep) -> None | str:
+async def register(user: UserInputSchema, session: SessionDep) -> UserOutSchema:
     try:
         new_user = await create_user_crud(user, session)
+        validated_user = UserOutSchema.model_validate(new_user) 
+        return validated_user
     except AlreadyExistsError as ex:
         raise HTTPException(status_code=HTTP_409_CONFLICT)
-    return f"user created {new_user}"
+    raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR)
 
 @router.post("/login")
 async def login_for_access_token(

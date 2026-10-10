@@ -14,6 +14,7 @@ from backend.models.user import User
 from backend.schemas.auth import UserOutSchema
 from backend.core.config import get_logger
 from backend.schemas.friends import FriendRequestSchema, FriendSchema
+from backend.services.friends import validate_friend_requests
 
 log = get_logger(__name__)
 router = APIRouter()
@@ -68,15 +69,8 @@ async def get_all_friend_requests(
     friend_requests = await get_all_friends_requests_crud(
         current_user_id=current_user.id, session=session
     )
-    if friend_requests is None:
+    normalized_friends_request = validate_friend_requests(current_user.id, friend_requests)
+
+    if normalized_friends_request is None:
          raise HTTPException(status_code=HTTP_404_NOT_FOUND)
-    return friend_requests
-    # friend_requests_results: list[FriendRequestSchema] = []
-    # for status in friend_requests:
-    #     #friend = FriendSchema.model_validate(status[0])
-    #     log.info("id: %s, accepted_date : %s", status[0], status[1])
-    #     # raise HTTPException(status_code=HTTP_404_NOT_FOUND)
-    #     friend_request = FriendRequestSchema(user=status[0],  accepted_date=status[1])
-    #     friend_requests_results.append(friend_request)
-    # return friend_requests_results
-        
+    return normalized_friends_request

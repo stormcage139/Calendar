@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, String
@@ -28,7 +28,7 @@ class Event(Base):
         default=False,
     )
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    deadline: Mapped[date] = mapped_column(Date())
+    deadline: Mapped[datetime] = mapped_column(Date())
     status: Mapped[EventStatus] = mapped_column(
         SQLEnum(EventStatus, name="event_status"),
         default=EventStatus.CREATED,
