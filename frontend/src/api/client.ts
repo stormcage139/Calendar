@@ -30,9 +30,12 @@ export async function request(
   authenticated = true,
 ): Promise<unknown> {
   const headers = new Headers(init.headers);
+  const token = authenticated ? sessionStorage.getItem(TOKEN_KEY) : null;
   if (authenticated) {
-    const token = sessionStorage.getItem(TOKEN_KEY);
-    if (!token) throw new ApiError("Войдите в аккаунт, чтобы продолжить.", 401);
+    if (!token) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+      throw new ApiError("Войдите в аккаунт, чтобы продолжить.", 401);
+    }
     headers.set("Authorization", `Bearer ${token}`);
   }
 
@@ -50,9 +53,11 @@ export async function request(
     throw new ApiError("Сервер недоступен. Проверьте соединение и попробуйте ещё раз.");
   }
 
+  init.signal?.throwIfAborted();
+
   if (!response.ok) {
     if (response.status === 401) {
-      if (authenticated) {
+      if (authenticated && sessionStorage.getItem(TOKEN_KEY) === token) {
         clearSession();
         window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
       }

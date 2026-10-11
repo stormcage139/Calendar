@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { getCurrentUser, login, register } from "./api/auth";
 import type { User } from "./api/auth";
 import { clearSession, errorMessage, hasSession, SESSION_EXPIRED_EVENT } from "./api/client";
-import Dashboard from "./Dashboard";
+import Planner from "./pages/Planner";
 import "./App.css";
 
 type Mode = "login" | "register";
@@ -125,7 +125,10 @@ function App() {
     setSessionError("");
     try {
       const user = await getCurrentUser(signal);
-      if (!signal?.aborted) setSignedIn(user);
+      if (!signal?.aborted) {
+        setSignedIn(user);
+        window.history.replaceState(null, "", "#calendar");
+      }
     } catch (cause) {
       if (!signal?.aborted && hasSession()) setSessionError(errorMessage(cause));
     } finally {
@@ -241,7 +244,7 @@ function App() {
     </div></main>;
   }
 
-  if (signedIn) return <Dashboard user={signedIn} onLogout={logout} />;
+  if (signedIn) return <Planner key={signedIn.id} user={signedIn} onLogout={logout} />;
 
   return (
     <main className="auth-layout">

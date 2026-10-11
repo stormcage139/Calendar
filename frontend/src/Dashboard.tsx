@@ -125,7 +125,7 @@ export default function Dashboard({ user, onLogout }: { user: User; onLogout: (m
     if (!Number.isSafeInteger(id) || id <= 0) { setError("Введите положительный целый ID пользователя."); return; }
     if (id === user.id) { setError("Нельзя добавить себя в друзья."); return; }
     void run(async () => {
-      const incoming = requests.data.some((item) => item.from_user === id && item.to_user === user.id && item.accepted_date === null);
+      const incoming = requests.data.some((item) => item.friend_id === id && item.type === "incoming" && item.accepted_date === null);
       await sendFriendRequest(id);
       form.reset();
       setNotice(incoming ? "Заявка принята." : "Заявка отправлена.");
@@ -135,8 +135,8 @@ export default function Dashboard({ user, onLogout }: { user: User; onLogout: (m
 
   const otherFriends = friends.data.filter((friend) => friend.id !== user.id);
   const pending = requests.data.filter((item) => item.accepted_date === null);
-  const incoming = pending.filter((item) => item.to_user === user.id);
-  const outgoing = pending.filter((item) => item.from_user === user.id);
+  const incoming = pending.filter((item) => item.type === "incoming");
+  const outgoing = pending.filter((item) => item.type === "outgoing");
   const offset = (month.getDay() + 6) % 7;
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const days = Array.from({ length: Math.ceil((offset + daysInMonth) / 7) * 7 }, (_, index) => {
@@ -228,15 +228,15 @@ export default function Dashboard({ user, onLogout }: { user: User; onLogout: (m
               {!friends.loading && !friends.error && otherFriends.length === 0 && <p className="empty-note">Пригласите друга, чтобы начать планировать вместе.</p>}
             </section>
             <section className="workspace-card"><h2>Заявки в друзья</h2><ResourceStatus loading={requests.loading} error={requests.error} retry={requests.refresh} />
-              <h3 className="list-heading">Входящие</h3><ul className="data-list">{incoming.map((item) => <li key={item.from_user}>
-                <div><strong>{friendNames.get(item.from_user) ?? `Пользователь #${item.from_user}`}</strong><small>Хочет добавить вас в друзья</small></div><div className="row-actions">
-                  <button className="text-button" disabled={busy} onClick={() => void run(async () => { await sendFriendRequest(item.from_user); setNotice("Заявка принята."); await refreshFriends(); })}>Принять</button>
-                  <button className="text-button" disabled={busy} onClick={() => void run(async () => { await removeFriend(item.from_user); setNotice("Заявка отклонена."); await refreshFriends(); })}>Отклонить</button>
+              <h3 className="list-heading">Входящие</h3><ul className="data-list">{incoming.map((item) => <li key={item.friend_id}>
+                <div><strong>{friendNames.get(item.friend_id) ?? `Пользователь #${item.friend_id}`}</strong><small>Хочет добавить вас в друзья</small></div><div className="row-actions">
+                  <button className="text-button" disabled={busy} onClick={() => void run(async () => { await sendFriendRequest(item.friend_id); setNotice("Заявка принята."); await refreshFriends(); })}>Принять</button>
+                  <button className="text-button" disabled={busy} onClick={() => void run(async () => { await removeFriend(item.friend_id); setNotice("Заявка отклонена."); await refreshFriends(); })}>Отклонить</button>
                 </div>
               </li>)}</ul>
               {!requests.loading && !requests.error && incoming.length === 0 && <p className="empty-note">Нет входящих заявок.</p>}
-              <h3 className="list-heading">Исходящие</h3><ul className="data-list">{outgoing.map((item) => <li key={item.to_user}>
-                <div><strong>Пользователь #{item.to_user}</strong><small>Ожидаем ответа</small></div><button className="text-button" disabled={busy} onClick={() => void run(async () => { await removeFriend(item.to_user); setNotice("Заявка отменена."); await refreshFriends(); })}>Отменить</button>
+              <h3 className="list-heading">Исходящие</h3><ul className="data-list">{outgoing.map((item) => <li key={item.friend_id}>
+                <div><strong>Пользователь #{item.friend_id}</strong><small>Ожидаем ответа</small></div><button className="text-button" disabled={busy} onClick={() => void run(async () => { await removeFriend(item.friend_id); setNotice("Заявка отменена."); await refreshFriends(); })}>Отменить</button>
               </li>)}</ul>
               {!requests.loading && !requests.error && outgoing.length === 0 && <p className="empty-note">Нет исходящих заявок.</p>}
             </section>

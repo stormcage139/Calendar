@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
 import { installBrowserEnvironment } from "./environment.mjs";
-import { getCurrentUser, login, register } from "../src/api/auth.ts";
+import { getCurrentUser, login, register, updateProfile } from "../src/api/auth.ts";
 import { clearSession } from "../src/api/client.ts";
 import { createEvent, deleteAccount, getEvents, getFriendRequests, getFriends, pingServer, removeFriend, sendFriendRequest } from "../src/api/calendar.ts";
 
@@ -45,14 +45,19 @@ try {
   await pingServer();
   const first = { login: "integration_one", email: "one@example.com", password: "test-password-1" };
   const second = { login: "integration_two", email: "two@example.com", password: "test-password-2" };
-  await register(first);
+  const registered = await register(first);
+  assert.equal(registered.login, first.login);
   await register(second);
+  await assert.rejects(register(first), /уже занят/);
+  await assert.rejects(login(first.login, "wrong-password"), /Неверный логин/);
   await login(first.login, first.password);
   const me = await getCurrentUser();
   const firstToken = sessionStorage.getItem("calendar_access_token");
   assert.equal(me.login, first.login);
   assert.deepEqual(await getEvents(), []);
-  await createEvent({ name: "Совместная встреча", online: true, deadline: "2026-10-15T00:00:00" });
+  const created = await createEvent({ name: "Совместная встреча", online: true, deadline: "2026-10-15T00:00:00" });
+  assert.ok(created.id);
+  assert.equal(created.name, "Совместная встреча");
   const events = await getEvents();
   assert.equal(events.length, 1);
   assert.equal(events[0].deadline, "2026-10-15T00:00:00");
@@ -64,13 +69,13 @@ try {
   sessionStorage.setItem("calendar_access_token", firstToken);
   await sendFriendRequest(other.id);
   const outgoing = await getFriendRequests();
-  assert.deepEqual(outgoing, [{ from_user: me.id, to_user: other.id, accepted_date: null }]);
+  assert.deepEqual(outgoing, [{ friend_id: other.id, type: "outgoing", accepted_date: null }]);
   await assert.rejects(sendFriendRequest(other.id), /Запрос не выполнен/);
   sessionStorage.setItem("calendar_access_token", secondToken);
-  assert.deepEqual(await getFriendRequests(), outgoing);
+  assert.deepEqual(await getFriendRequests(), [{ friend_id: me.id, type: "incoming", accepted_date: null }]);
   await sendFriendRequest(me.id);
   assert.equal((await getFriends())[0].id, me.id);
-  assert.ok((await getFriendRequests())[0].accepted_date);
+  assert.deepEqual(await getFriendRequests(), []);
   sessionStorage.setItem("calendar_access_token", firstToken);
   assert.equal((await getFriends())[0].id, other.id);
   await removeFriend(other.id);
@@ -84,30 +89,19 @@ try {
   await assert.rejects(getCurrentUser(), /Сессия истекла/);
   assert.equal(sessionStorage.getItem("calendar_access_token"), null);
 
-  // Audit unsupported contracts in the same disposable database.
-  const brokenToken = await originalFetch(`${origin}/token`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ login: first.login, password: first.password }),
-  });
-  assert.equal(brokenToken.status, 500);
-  const stringUser = await originalFetch(`${origin}/users/${me.id}`);
-  assert.equal(typeof (await stringUser.json()).user, "string");
   sessionStorage.setItem("calendar_access_token", firstToken);
   await createEvent({ name: "Time audit", online: false, deadline: "2026-10-16T18:30:00+03:00" });
   assert.equal((await getEvents()).find((event) => event.name === "Time audit").deadline, "2026-10-16T00:00:00");
-  const changed = { ...first, password: "changed-password" };
-  const patch = await originalFetch(`${origin}/users/${me.id}`, {
-    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(changed),
-  });
-  assert.equal(patch.status, 200); // No authorization is required by the existing route.
-  assert.equal((await patch.json()).user.password, changed.password);
-  const brokenLogin = await originalFetch(`${origin}/token_test`, {
-    method: "POST", body: new URLSearchParams({ username: first.login, password: changed.password }),
-  });
-  assert.equal(brokenLogin.status, 500); // PATCH stored an unhashed password.
+  const changed = { login: "integration_updated", email: "updated@example.com", password: "changed-password" };
+  assert.deepEqual(await updateProfile(me.id, changed), { id: me.id, login: changed.login, email: changed.email });
+  // JWTs use the login as subject; renaming requires a fresh login.
+  await assert.rejects(getCurrentUser(), /Сессия истекла/);
+  await assert.rejects(login(first.login, first.password), /Неверный логин/);
+  await login(changed.login, changed.password);
+  assert.equal((await getCurrentUser()).id, me.id);
+  assert.equal((await getEvents()).length, 2);
   clearSession();
-  console.log("Integration passed: registration, login, profile, events, friendship, requests, rejection, deletion, expired session, ping.");
-  console.log("Backend audit confirmed: /token fails; user lookup returns a string; events discard time; PATCH is unauthenticated, exposes password and breaks login.");
+  console.log("Integration passed: registration, duplicate registration, JSON login, profile restore/update, event creation/read/isolation, incoming/outgoing requests, acceptance, rejection, removal, account deletion, expired sessions, ping.");
 } finally {
   globalThis.fetch = originalFetch;
   server.kill("SIGTERM");

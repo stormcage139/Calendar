@@ -10,35 +10,35 @@ export type CalendarEvent = {
 };
 
 export type FriendRequest = {
-  from_user: number;
-  to_user: number;
+  friend_id: number;
+  type: "incoming" | "outgoing";
   accepted_date: string | null;
 };
+
+function readEvent(event: unknown): CalendarEvent {
+  if (!isObject(event) || !Number.isSafeInteger(event.id) || (event.id as number) <= 0 ||
+      typeof event.name !== "string" || typeof event.online !== "boolean" ||
+      typeof event.deadline !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(event.deadline) ||
+      Number.isNaN(Date.parse(event.deadline))) return invalidResponse();
+  return { id: event.id as number, name: event.name, online: event.online, deadline: event.deadline };
+}
 
 export async function getEvents(signal?: AbortSignal): Promise<CalendarEvent[]> {
   const data = await request("/events/", { signal });
   if (!Array.isArray(data)) return invalidResponse();
-  return data.map((event) => {
-    if (!isObject(event) || !Number.isSafeInteger(event.id) ||
-        typeof event.name !== "string" || typeof event.online !== "boolean" ||
-        typeof event.deadline !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(event.deadline) ||
-        Number.isNaN(Date.parse(event.deadline))) return invalidResponse();
-    return { id: event.id as number, name: event.name, online: event.online, deadline: event.deadline };
-  });
+  return data.map(readEvent);
 }
 
 export async function createEvent(data: {
   name: string;
   online: boolean;
   deadline: string;
-}): Promise<void> {
-  // POST /events/ returns null; reload GET /events/ after success.
-  const result = await request("/events/", {
+}): Promise<CalendarEvent> {
+  return readEvent(await request("/events/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  });
-  if (result !== null) invalidResponse();
+  }));
 }
 
 export async function getFriends(signal?: AbortSignal): Promise<User[]> {
@@ -55,11 +55,13 @@ export async function getFriendRequests(signal?: AbortSignal): Promise<FriendReq
   const data = await request("/friends/requests", { signal });
   if (!Array.isArray(data)) return invalidResponse();
   return data.map((item) => {
-    if (!isObject(item) || !Number.isSafeInteger(item.from_user) || !Number.isSafeInteger(item.to_user) ||
+    if (!isObject(item) || !Number.isSafeInteger(item.new_freind_id) || (item.new_freind_id as number) <= 0 ||
+        (item.type !== "incoming" && item.type !== "outgoing") ||
         !(item.accepted_date === null || (typeof item.accepted_date === "string" && !Number.isNaN(Date.parse(item.accepted_date))))) {
       return invalidResponse();
     }
-    return { from_user: item.from_user as number, to_user: item.to_user as number, accepted_date: item.accepted_date as string | null };
+    // Preserve the backend spelling only at the API boundary.
+    return { friend_id: item.new_freind_id as number, type: item.type, accepted_date: item.accepted_date as string | null };
   });
 }
 
