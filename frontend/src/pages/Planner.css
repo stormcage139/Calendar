@@ -11,7 +11,7 @@
   grid-template-rows: 85px 1fr;
   background: var(--pl-bg);
   color: var(--pl-text);
-  font-size: 13px;
+  font-size: 16px;
 }
 .planner button,
 .planner input,
@@ -30,19 +30,19 @@
     border-color 160ms;
 }
 .planner h1 {
-  font-size: clamp(28px, 2.7vw, 39px);
+  font-size: clamp(30px, 2.9vw, 42px);
   line-height: 1.2;
   letter-spacing: -1.5px;
   font-weight: 500;
   margin: 15px 0 12px;
 }
 .planner h2 {
-  font-size: 25px;
+  font-size: 27px;
   letter-spacing: -0.8px;
   font-weight: 500;
 }
 .planner h3 {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 550;
   letter-spacing: -0.3px;
 }
@@ -73,7 +73,7 @@
 .pl-header .brand {
   align-self: auto;
   flex-shrink: 0;
-  font-size: 27px;
+  font-size: 29px;
   min-width: 200px;
 }
 .pl-search {
@@ -116,7 +116,7 @@
   padding: 11px 16px;
   min-height: 41px;
   line-height: 1.4;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 500;
 }
 .pl-button:hover:not(:disabled) {
@@ -139,7 +139,7 @@
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
   border: none;
   flex-shrink: 0;
@@ -192,13 +192,13 @@
   line-height: 1.6;
 }
 .pl-notification-panel strong {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 500;
 }
 .pl-notification-panel small {
   display: block;
   color: var(--pl-muted);
-  font-size: 11px;
+  font-size: 15px;
 }
 .pl-sidebar {
   border-right: 1px solid var(--pl-border);
@@ -209,7 +209,7 @@
 }
 .pl-kicker {
   color: #909780;
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 1.4px;
   line-height: 1.5;
@@ -235,7 +235,7 @@
   text-align: left;
   padding: 12px 13px;
   min-height: 44px;
-  font-size: 12px;
+  font-size: 16px;
 }
 .pl-sidebar nav button:hover {
   background: #e9ecdf;
@@ -246,7 +246,7 @@
   font-weight: 600;
 }
 .pl-nav-icon {
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
   width: 21px;
   text-align: center;
@@ -254,7 +254,7 @@
 }
 .pl-count {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 14px;
   border: 1px solid #dfe3d3;
   border-radius: 5px;
   min-width: 21px;
@@ -266,18 +266,18 @@
   margin-top: auto;
 }
 .pl-sidebar-note > span {
-  font-size: 29px;
+  font-size: 31px;
   color: #9aa986;
 }
 .pl-sidebar-note p {
   color: #8b927d;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.9;
   margin-top: 12px;
 }
 .pl-sidebar-note em {
   font-family: Georgia, serif;
-  font-size: 15px;
+  font-size: 18px;
   color: #697b50;
 }
 .pl-sidebar-bottom {
@@ -303,7 +303,7 @@
 }
 .pl-sidebar-bottom select {
   margin-top: 10px;
-  font-size: 10px;
+  font-size: 14px;
   background: transparent;
   padding-inline: 8px;
   letter-spacing: 0;
@@ -317,15 +317,20 @@
   padding-block: 23px;
   margin-top: 22px;
 }
+.pl-sidebar-bottom > .pl-user:first-child {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
 .pl-user strong,
 .pl-person-row strong {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 550;
 }
 .pl-user small,
 .pl-person-row small {
   color: var(--pl-muted);
-  font-size: 10px;
+  font-size: 14px;
   display: block;
   margin-top: 5px;
 }
@@ -363,13 +368,13 @@
 }
 .pl-page-heading p {
   color: var(--pl-muted);
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.8;
 }
 .pl-heading-star {
   color: #a0ad89;
   display: inline-block;
-  font-size: 30px;
+  font-size: 32px;
   margin-left: 13px;
   font-weight: 400;
   vertical-align: middle;
@@ -398,7 +403,7 @@
   margin-bottom: -1px;
   color: #949a88;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 16px;
 }
 .pl-tabs > button[aria-pressed="true"] {
   color: #53683d;
@@ -410,11 +415,11 @@
   background: #e9ecdf;
   border-radius: 4px;
   padding: 2px 5px;
-  font-size: 9px;
+  font-size: 13px;
 }
 .pl-list-label {
   margin-left: auto;
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 1.5px;
   color: #a0a591;
   padding-bottom: 12px;
@@ -445,7 +450,7 @@
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  font-size: 22px;
+  font-size: 24px;
 }
 .pl-event-content {
   display: block;
@@ -460,7 +465,7 @@
   flex-wrap: wrap;
 }
 .pl-event-top strong {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 550;
   letter-spacing: -0.2px;
   line-height: 1.5;
@@ -469,7 +474,7 @@
   display: inline-block;
   border-radius: 5px;
   padding: 5px 8px;
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
 }
@@ -477,7 +482,7 @@
   display: block;
   margin-top: 7px;
   color: #989d8d;
-  font-size: 10px;
+  font-size: 14px;
 }
 .pl-event-type > span {
   margin-inline: 5px;
@@ -491,11 +496,11 @@
   padding-top: 13px;
   border-top: 1px solid #eff0e9;
   color: #8c937e;
-  font-size: 10px;
+  font-size: 14px;
 }
 .pl-card-arrow {
   margin-left: auto;
-  font-size: 16px;
+  font-size: 19px;
   color: #899976;
 }
 .pl-all-events {
@@ -507,10 +512,10 @@
   border: none;
   background: none;
   color: #748760;
-  font-size: 11px;
+  font-size: 15px;
 }
 .pl-all-events span {
-  font-size: 17px;
+  font-size: 19px;
 }
 .pl-card {
   background: var(--pl-card);
@@ -539,7 +544,7 @@
 .pl-month-nav button {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 22px;
   color: #8e9880;
   width: 22px;
   height: 28px;
@@ -551,7 +556,7 @@
   text-align: center;
 }
 .pl-weekday {
-  font-size: 8px;
+  font-size: 12px;
   color: #a0a592;
   padding: 4px 0 11px;
 }
@@ -562,7 +567,7 @@
   display: grid;
   place-items: center;
   margin: 0 auto;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 400;
 }
 .pl-other-day {
@@ -583,17 +588,13 @@
   border-radius: 50%;
   background: #93a578;
 }
-.pl-event-day:nth-child(30)::after,
-.pl-event-day:nth-child(32)::after {
-  background: #b8a4cb;
-}
 .pl-legend {
   display: flex;
   gap: 15px;
   border-top: 1px solid #edf0e5;
   padding-top: 17px;
   margin-top: 17px;
-  font-size: 8px;
+  font-size: 12px;
   color: #939a85;
 }
 .pl-legend > span {
@@ -621,7 +622,7 @@
   padding: 24px;
 }
 .pl-together-card > .pl-kicker {
-  font-size: 8px;
+  font-size: 12px;
 }
 .pl-avatar-stack {
   display: flex;
@@ -633,14 +634,14 @@
   margin-left: -5px;
   width: 35px;
   height: 35px;
-  font-size: 9px;
+  font-size: 13px;
 }
 .pl-avatar-more {
   background: #e1e6d5;
   color: #7e8d67;
 }
 .pl-together-card h3 {
-  font-size: 23px;
+  font-size: 25px;
   line-height: 1.25;
   letter-spacing: -0.6px;
   font-weight: 400;
@@ -650,7 +651,7 @@
   color: #76845e;
 }
 .pl-together-card p {
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.9;
   color: #929981;
   margin-top: 13px;
@@ -665,12 +666,12 @@
   border-top: 1px solid #dde3cf;
   padding: 16px 0 0;
   margin-top: 20px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 550;
   color: #65794d;
 }
 .pl-together-card button span {
-  font-size: 16px;
+  font-size: 19px;
 }
 .pl-footer {
   display: flex;
@@ -678,7 +679,7 @@
   justify-content: space-between;
   gap: 15px;
   color: #a5aa98;
-  font-size: 9px;
+  font-size: 13px;
   padding: 28px 0 24px;
   margin-top: auto;
 }
@@ -697,7 +698,7 @@
 .pl-muted {
   color: var(--pl-muted);
   line-height: 1.8;
-  font-size: 12px;
+  font-size: 16px;
 }
 .pl-friends-grid {
   display: grid;
@@ -708,15 +709,29 @@
   padding: 30px 20px;
   text-align: center;
 }
+.pl-friends-grid + .pl-section-heading {
+  margin-top: 32px;
+}
+/* Friend request rows are cards: inner padding, actions on the right. */
+.pl-card.pl-person-row {
+  padding-inline: 20px;
+}
+.pl-card.pl-person-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.pl-card.pl-person-row + .pl-card.pl-person-row {
+  margin-top: 12px;
+}
 .pl-friend .pl-avatar {
   width: 60px;
   height: 60px;
-  font-size: 16px;
+  font-size: 19px;
   margin-bottom: 20px;
 }
 .pl-friend p {
   color: var(--pl-muted);
-  font-size: 11px;
+  font-size: 15px;
   margin: 8px 0 22px;
 }
 .pl-settings-grid {
@@ -731,7 +746,7 @@
 }
 .pl-settings-card > p {
   color: var(--pl-muted);
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.8;
   margin: 12px 0 22px;
 }
@@ -746,7 +761,7 @@
   gap: 20px;
   padding-block: 18px;
   border-top: 1px solid var(--pl-border);
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.7;
 }
 .pl-setting > input[role="switch"] {
@@ -781,7 +796,7 @@
   align-items: center;
   gap: 9px;
   padding-block: 10px;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.6;
 }
 .planner input[type="radio"],
@@ -804,7 +819,7 @@
 .pl-profile .pl-avatar {
   width: 70px;
   height: 70px;
-  font-size: 21px;
+  font-size: 23px;
 }
 .pl-profile p {
   margin: 8px 0;
@@ -827,14 +842,14 @@
 }
 .pl-stats strong {
   display: block;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 400;
   color: var(--pl-primary);
   margin-bottom: 10px;
 }
 .pl-stats span {
   color: var(--pl-muted);
-  font-size: 11px;
+  font-size: 15px;
 }
 .pl-table-scroll {
   overflow-x: auto;
@@ -842,7 +857,7 @@
 .planner table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 15px;
 }
 .planner th,
 .planner td {
@@ -863,7 +878,7 @@
   padding: 15px;
   margin-bottom: 20px;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.8;
 }
 .pl-result strong {
@@ -892,18 +907,18 @@
   margin: 14px 0;
 }
 .pl-chat-message strong {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 550;
 }
 .pl-chat-message small {
-  font-size: 10px;
+  font-size: 14px;
   color: var(--pl-muted);
   font-weight: 400;
   margin-left: 10px;
 }
 .pl-chat-message p {
   margin-top: 10px;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.6;
 }
 .pl-archive-button {
@@ -912,7 +927,7 @@
 }
 .planner .pl-field {
   display: block;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 500;
   margin: 18px 0;
 }
@@ -920,7 +935,7 @@
 .planner .pl-field select,
 .planner .pl-field textarea {
   margin-top: 9px;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 400;
 }
 .planner input:focus-visible,
@@ -948,7 +963,7 @@
   margin-bottom: 10px;
 }
 .pl-dialog .pl-icon-button {
-  font-size: 25px;
+  font-size: 27px;
 }
 .pl-dialog-actions {
   display: flex;
@@ -970,7 +985,7 @@
   margin-top: 23px;
 }
 .pl-invite-list legend {
-  font-size: 12px;
+  font-size: 16px;
   padding-right: 10px;
 }
 .planner .pl-radio input {
@@ -985,7 +1000,7 @@
 }
 .pl-help {
   margin-top: 16px;
-  font-size: 11px;
+  font-size: 15px;
   line-height: 1.9;
 }
 @media (min-width: 1600px) {
@@ -1036,7 +1051,7 @@
     margin-top: 27px;
   }
   .pl-event-top strong {
-    font-size: 13px;
+    font-size: 16px;
   }
   .pl-friends-grid {
     gap: 12px;
@@ -1067,7 +1082,7 @@
     gap: 12px;
   }
   .pl-add-friend {
-    font-size: 11px;
+    font-size: 15px;
     white-space: nowrap;
   }
   .pl-settings-grid,
@@ -1110,7 +1125,7 @@
   }
   .pl-header .brand {
     min-width: 0;
-    font-size: 24px;
+    font-size: 26px;
   }
   .pl-header .brand-symbol {
     width: 31px;
@@ -1140,10 +1155,10 @@
     gap: 8px;
     min-height: 40px;
     padding: 10px 12px;
-    font-size: 11px;
+    font-size: 15px;
   }
   .pl-nav-icon {
-    font-size: 17px;
+    font-size: 19px;
     width: 18px;
   }
   .pl-main {
@@ -1151,18 +1166,18 @@
     flex: 1;
   }
   .planner h1 {
-    font-size: 32px;
+    font-size: 34px;
     letter-spacing: -1.3px;
   }
   .pl-heading-star {
-    font-size: 25px;
+    font-size: 27px;
     margin-left: 9px;
   }
   .pl-event-card {
     padding: 18px 16px;
   }
   .pl-event-top strong {
-    font-size: 14px;
+    font-size: 17px;
   }
   .pl-notification-panel {
     right: -46px;
@@ -1174,7 +1189,7 @@
     padding-inline: 16px;
   }
   .planner h1 {
-    font-size: 29px;
+    font-size: 31px;
   }
   .pl-right-column {
     grid-template-columns: 1fr;
@@ -1188,7 +1203,7 @@
   .pl-event-icon {
     width: 34px;
     height: 34px;
-    font-size: 19px;
+    font-size: 21px;
     border-radius: 8px;
   }
   .pl-event-top {
@@ -1196,7 +1211,7 @@
   }
   .pl-event-meta {
     gap: 10px;
-    font-size: 9px;
+    font-size: 13px;
   }
   .pl-tabs {
     gap: 21px;
@@ -1204,19 +1219,19 @@
     padding-top: 4px;
   }
   .pl-tabs > button {
-    font-size: 11px;
+    font-size: 15px;
   }
   .pl-dialog {
     padding: 22px;
   }
   .pl-dialog h2 {
-    font-size: 22px;
+    font-size: 24px;
   }
   .pl-dialog .pl-heading-star {
     display: none;
   }
   .pl-dialog-actions .pl-button {
-    font-size: 11px;
+    font-size: 15px;
     padding-inline: 12px;
   }
   .pl-settings-card {
@@ -1234,6 +1249,6 @@
     margin-left: 50px;
   }
   .pl-footer {
-    font-size: 8px;
+    font-size: 12px;
   }
 }

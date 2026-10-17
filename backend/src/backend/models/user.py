@@ -20,7 +20,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(length=128))
     password: Mapped[str] = mapped_column(String(length=128))
 
-    event_member: Mapped["EventMember"] = relationship(back_populates="user")
+    event_member: Mapped[list["EventMember"]] = relationship(back_populates="user")
     def __str__(self):
         return f"id:{self.id} / login: {self.login} / email: {self.email}"
     def __repr__(self):

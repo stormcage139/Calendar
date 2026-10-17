@@ -3,7 +3,10 @@ import { afterEach, test } from "node:test";
 import { installBrowserEnvironment } from "./environment.mjs";
 import { getCurrentUser, login, register, updateProfile } from "../src/api/auth.ts";
 import { ApiError, hasSession, request, SESSION_EXPIRED_EVENT } from "../src/api/client.ts";
-import { createEvent, getEvents, getFriendRequests, getFriends, removeFriend, sendFriendRequest } from "../src/api/calendar.ts";
+import {
+  addOption, closeVoting, createEvent, getEvent, getEvents, getFriendRequests, getFriends, getResults,
+  inviteToEvent, removeFriend, sendFriendRequest, sendFriendRequestByLogin, setVotes,
+} from "../src/api/calendar.ts";
 
 installBrowserEnvironment();
 const originalFetch = globalThis.fetch;
@@ -97,7 +100,9 @@ test("friend lists deduplicate by ID; requests normalize the backend typo and di
   assert.deepEqual(await getFriends(), [friend]);
   const data = [{ new_freind_id: 2, type: "incoming", accepted_date: null }, { new_freind_id: 3, type: "outgoing", accepted_date: null }];
   globalThis.fetch = async () => respond(data);
-  assert.deepEqual(await getFriendRequests(), [{ friend_id: 2, type: "incoming", accepted_date: null }, { friend_id: 3, type: "outgoing", accepted_date: null }]);
+  assert.deepEqual(await getFriendRequests(), [{ friend_id: 2, login: null, type: "incoming", accepted_date: null }, { friend_id: 3, login: null, type: "outgoing", accepted_date: null }]);
+  globalThis.fetch = async () => respond([{ ...data[0], login: "friend" }]);
+  assert.deepEqual(await getFriendRequests(), [{ friend_id: 2, login: "friend", type: "incoming", accepted_date: null }]);
 });
 
 test("network, service, malformed JSON and missing auth fail without false success", async () => {
@@ -165,4 +170,84 @@ test("friend request posts directly to the entered ID without a user directory l
   };
   await sendFriendRequest(42);
   assert.deepEqual(calls, [{ url: "/api/friends/42", method: "POST" }]);
+});
+
+
+test("friend request by login strips @, encodes the login and explains 404/400", async () => {
+  sessionStorage.setItem("calendar_access_token", "token");
+  const calls = [];
+  globalThis.fetch = async (url, init) => { calls.push({ url, method: init.method }); return respond(true); };
+  await sendFriendRequestByLogin(" @анна/b ");
+  assert.deepEqual(calls, [{ url: "/api/friends/by-login/%D0%B0%D0%BD%D0%BD%D0%B0%2Fb", method: "POST" }]);
+  globalThis.fetch = async () => respond({ detail: "user not found" }, 404);
+  await assert.rejects(sendFriendRequestByLogin("ghost"), /@ghost не найден/);
+  globalThis.fetch = async () => respond({ detail: "self" }, 400);
+  await assert.rejects(sendFriendRequestByLogin("me"), /себя/);
+  globalThis.fetch = async () => respond(false);
+  await assert.rejects(sendFriendRequestByLogin("bob"), /уже отправлена/);
+});
+
+const event = {
+  id: 7, name: "Party", online: false, deadline: "2099-01-01T15:00:00Z", description: "snacks",
+  status: "voting", creator_id: 1, final_start: null, final_end: null,
+};
+const option = {
+  id: 3, start: "2099-02-01T10:00:00Z", end: "2099-02-01T12:00:00Z", author_id: 1,
+  author_login: "alice", votes: 2, voters: ["alice", "bob"], voted_by_me: true,
+};
+
+test("events keep the new optional fields; create sends description and invites", async () => {
+  sessionStorage.setItem("calendar_access_token", "token");
+  const data = { name: "Party", online: false, deadline: "2099-01-01T15:00:00.000Z", description: "snacks", invite_logins: ["bob"] };
+  globalThis.fetch = async (url, init) => {
+    assert.equal(url, "/api/events/");
+    assert.deepEqual(JSON.parse(init.body), data);
+    return respond(event);
+  };
+  assert.deepEqual(await createEvent(data), event);
+  globalThis.fetch = async () => respond({ detail: "unknown logins: ghost" }, 404);
+  await assert.rejects(createEvent(data), /логином не найден/);
+});
+
+test("event detail, invites, options, votes and results are validated", async () => {
+  sessionStorage.setItem("calendar_access_token", "token");
+  const detail = {
+    ...event, creator_login: "alice", my_status: "creator", awaiting_creator: false,
+    members: [{ user_id: 1, login: "alice", status: "joined" }, { user_id: 2, login: "bob", status: "invited" }],
+  };
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push([init.method ?? "GET", url, init.body ? JSON.parse(init.body) : undefined]);
+    if (url.endsWith("/options")) return respond(option);
+    if (url.endsWith("/votes")) return respond([option]);
+    if (url.endsWith("/results") || url.endsWith("/close")) {
+      return respond({ status: "completed", options: [option], leaders: [3], is_tie: false, voters_count: 2, members_count: 2, final: option, resolved_by: "votes" });
+    }
+    return respond(detail);
+  };
+  assert.deepEqual((await getEvent(7)).members[1], { user_id: 2, login: "bob", status: "invited" });
+  await inviteToEvent(7, ["bob"]);
+  assert.deepEqual(await addOption(7, option.start, option.end), option);
+  assert.deepEqual(await setVotes(7, [3]), [option]);
+  assert.equal((await getResults(7)).final.id, 3);
+  await closeVoting(7);
+  await closeVoting(7, 3);
+  assert.deepEqual(calls, [
+    ["GET", "/api/events/7", undefined],
+    ["POST", "/api/events/7/invite", { logins: ["bob"] }],
+    ["POST", "/api/events/7/options", { start: option.start, end: option.end }],
+    ["PUT", "/api/events/7/votes", { date_option_ids: [3] }],
+    ["GET", "/api/events/7/results", undefined],
+    ["POST", "/api/events/7/close", { date_option_id: null }],
+    ["POST", "/api/events/7/close", { date_option_id: 3 }],
+  ]);
+
+  globalThis.fetch = async () => respond({ ...detail, my_status: "owner" });
+  await assert.rejects(getEvent(7), /формат/);
+  globalThis.fetch = async () => respond({ ...option, voters: [1] });
+  await assert.rejects(addOption(7, option.start, option.end), /формат/);
+  globalThis.fetch = async () => respond({ detail: { message: "tie", leaders: [1, 2] } }, 409);
+  await assert.rejects(closeVoting(7), /Ничья/);
+  globalThis.fetch = async () => respond({ detail: "not found" }, 404);
+  await assert.rejects(getEvent(7), /не найдено/);
 });

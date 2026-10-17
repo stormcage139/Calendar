@@ -8,7 +8,10 @@ import { createServer } from "node:net";
 import { installBrowserEnvironment } from "./environment.mjs";
 import { getCurrentUser, login, register, updateProfile } from "../src/api/auth.ts";
 import { clearSession } from "../src/api/client.ts";
-import { createEvent, deleteAccount, getEvents, getFriendRequests, getFriends, pingServer, removeFriend, sendFriendRequest } from "../src/api/calendar.ts";
+import {
+  acceptInvite, addOption, closeVoting, createEvent, deleteAccount, getEvent, getEvents, getFriendRequests, getFriends,
+  getResults, pingServer, removeFriend, sendFriendRequest, sendFriendRequestByLogin, setVotes, startVoting,
+} from "../src/api/calendar.ts";
 
 installBrowserEnvironment();
 const frontend = fileURLToPath(new URL("../", import.meta.url));
@@ -55,12 +58,15 @@ try {
   const firstToken = sessionStorage.getItem("calendar_access_token");
   assert.equal(me.login, first.login);
   assert.deepEqual(await getEvents(), []);
-  const created = await createEvent({ name: "Совместная встреча", online: true, deadline: "2026-10-15T00:00:00" });
+  // Deadlines must be in the future; naive times are read as UTC.
+  await assert.rejects(createEvent({ name: "Прошлое", online: true, deadline: "2001-10-15T00:00:00" }), /Проверьте/);
+  const created = await createEvent({ name: "Совместная встреча", online: true, deadline: "2099-10-15T00:00:00" });
   assert.ok(created.id);
   assert.equal(created.name, "Совместная встреча");
   const events = await getEvents();
   assert.equal(events.length, 1);
-  assert.equal(events[0].deadline, "2026-10-15T00:00:00");
+  assert.equal(events[0].deadline, "2099-10-15T00:00:00Z");
+  assert.equal(events[0].status, "collecting");
 
   await login(second.login, second.password);
   const other = await getCurrentUser();
@@ -69,10 +75,10 @@ try {
   sessionStorage.setItem("calendar_access_token", firstToken);
   await sendFriendRequest(other.id);
   const outgoing = await getFriendRequests();
-  assert.deepEqual(outgoing, [{ friend_id: other.id, type: "outgoing", accepted_date: null }]);
+  assert.deepEqual(outgoing, [{ friend_id: other.id, login: second.login, type: "outgoing", accepted_date: null }]);
   await assert.rejects(sendFriendRequest(other.id), /Запрос не выполнен/);
   sessionStorage.setItem("calendar_access_token", secondToken);
-  assert.deepEqual(await getFriendRequests(), [{ friend_id: me.id, type: "incoming", accepted_date: null }]);
+  assert.deepEqual(await getFriendRequests(), [{ friend_id: me.id, login: first.login, type: "incoming", accepted_date: null }]);
   await sendFriendRequest(me.id);
   assert.equal((await getFriends())[0].id, me.id);
   assert.deepEqual(await getFriendRequests(), []);
@@ -90,8 +96,9 @@ try {
   assert.equal(sessionStorage.getItem("calendar_access_token"), null);
 
   sessionStorage.setItem("calendar_access_token", firstToken);
-  await createEvent({ name: "Time audit", online: false, deadline: "2026-10-16T18:30:00+03:00" });
-  assert.equal((await getEvents()).find((event) => event.name === "Time audit").deadline, "2026-10-16T00:00:00");
+  // The deadline keeps its time and comes back in UTC.
+  await createEvent({ name: "Time audit", online: false, deadline: "2099-10-16T18:30:00+03:00" });
+  assert.equal((await getEvents()).find((event) => event.name === "Time audit").deadline, "2099-10-16T15:30:00Z");
   const changed = { login: "integration_updated", email: "updated@example.com", password: "changed-password" };
   assert.deepEqual(await updateProfile(me.id, changed), { id: me.id, login: changed.login, email: changed.email });
   // JWTs use the login as subject; renaming requires a fresh login.
@@ -100,8 +107,44 @@ try {
   await login(changed.login, changed.password);
   assert.equal((await getCurrentUser()).id, me.id);
   assert.equal((await getEvents()).length, 2);
+  const updatedToken = sessionStorage.getItem("calendar_access_token");
+
+  // Friends by login, then an event decided by an approval vote.
+  const third = { login: "integration_three", email: "three@example.com", password: "test-password-3" };
+  await register(third);
+  await assert.rejects(sendFriendRequestByLogin("nobody_here"), /не найден/);
+  await sendFriendRequestByLogin(`@${third.login}`);
+  await login(third.login, third.password);
+  const thirdToken = sessionStorage.getItem("calendar_access_token");
+  await sendFriendRequestByLogin(changed.login);
+  assert.deepEqual((await getFriends()).map((friend) => friend.login), [changed.login]);
+
+  sessionStorage.setItem("calendar_access_token", updatedToken);
+  const trip = await createEvent({
+    name: "Поездка", online: false, deadline: "2099-05-01T12:00:00Z", description: "Куда-нибудь", invite_logins: [third.login],
+  });
+  sessionStorage.setItem("calendar_access_token", thirdToken);
+  assert.equal((await getEvent(trip.id)).my_status, "invited");
+  await assert.rejects(addOption(trip.id, "2099-06-01T10:00:00Z", "2099-06-01T12:00:00Z"), /только организатору или участнику/);
+  await acceptInvite(trip.id);
+  const saturday = await addOption(trip.id, "2099-06-06T10:00:00Z", "2099-06-06T18:00:00Z");
+  sessionStorage.setItem("calendar_access_token", updatedToken);
+  const sunday = await addOption(trip.id, "2099-06-07T10:00:00Z", "2099-06-07T18:00:00Z");
+  await startVoting(trip.id);
+  await setVotes(trip.id, [saturday.id]);
+  sessionStorage.setItem("calendar_access_token", thirdToken);
+  await setVotes(trip.id, [sunday.id]);
+  sessionStorage.setItem("calendar_access_token", updatedToken);
+  const tie = await getResults(trip.id);
+  assert.equal(tie.is_tie, true);
+  await assert.rejects(closeVoting(trip.id), /Ничья/);
+  const final = await closeVoting(trip.id, sunday.id);
+  assert.equal(final.status, "completed");
+  assert.equal(final.resolved_by, "creator");
+  const finished = (await getEvents()).find((event) => event.id === trip.id);
+  assert.equal(finished.final_start, "2099-06-07T10:00:00Z");
   clearSession();
-  console.log("Integration passed: registration, duplicate registration, JSON login, profile restore/update, event creation/read/isolation, incoming/outgoing requests, acceptance, rejection, removal, account deletion, expired sessions, ping.");
+  console.log("Integration passed: registration, duplicate registration, JSON login, profile restore/update, event creation/read/isolation, incoming/outgoing requests, acceptance, rejection, removal, account deletion, expired sessions, ping, friends by login, invitations, date options, approval voting with tie resolution.");
 } finally {
   globalThis.fetch = originalFetch;
   server.kill("SIGTERM");

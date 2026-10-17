@@ -63,3 +63,11 @@ async def delete_user(id: int, session: AsyncSession) -> bool:
     except Exception as ex:
         log.exception(ex)
         return False
+
+
+async def get_users_by_logins(logins: list[str], session: AsyncSession) -> list[User]:
+    if not logins:
+        return []
+    stmt = select(User).where(User.login.in_(logins))
+    result = await session.execute(stmt)
+    return list(result.scalars().all())

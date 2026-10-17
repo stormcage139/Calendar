@@ -1,14 +1,16 @@
 from typing import Annotated, Any
 
 from fastapi.exceptions import HTTPException
-from starlette.status import HTTP_404_NOT_FOUND
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from backend.api.v1.routers.auth import get_current_user
 from backend.repositories.friends import add_friend, remove_friend
 from fastapi import APIRouter, Depends
 from backend.repositories.friends import (
     get_all_friends as get_all_friends_crud,
     get_all_friends_requests as get_all_friends_requests_crud,
+    get_friends_by_ids,
 )
+from backend.repositories.users import get_user_by_login
 from backend.api.deps import SessionDep
 from backend.models.user import User
 from backend.schemas.auth import UserOutSchema
@@ -73,4 +75,28 @@ async def get_all_friend_requests(
 
     if normalized_friends_request is None:
          raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+    # Attach the other user's login to every request.
+    users = await get_friends_by_ids(
+        [item.new_freind_id for item in normalized_friends_request], session=session
+    )
+    for item, user in zip(normalized_friends_request, users):
+        item.login = user.login if user is not None else None
     return normalized_friends_request
+
+
+@router.post("/by-login/{login}")
+async def send_friend_request_by_login(
+    login: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: SessionDep,
+) -> bool:
+    """Send a friend request by login, or accept it if that user already sent one."""
+    login = login.strip().removeprefix("@").strip()
+    new_friend = await get_user_by_login(login=login, session=session)
+    if new_friend is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="user not found")
+    if new_friend.id == current_user.id:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST, detail="You cant be friend with yourself"
+        )
+    return await add_friend(current_user.id, new_friend.id, session=session)

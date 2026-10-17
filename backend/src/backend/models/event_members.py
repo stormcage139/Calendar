@@ -33,5 +33,5 @@ class EventMember(Base):
         SQLEnum(EventMemberInviteStatus, name="event_invite_status"),
         default=EventMemberInviteStatus.INVITED,
     )
-    user: Mapped[list["User"]] = relationship(back_populates="event_member")
+    user: Mapped["User"] = relationship(back_populates="event_member")
     event: Mapped["Event"] = relationship(back_populates="members")

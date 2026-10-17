@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { updateProfile } from "../api/auth";
 import type { User } from "../api/auth";
-import { createEvent, deleteAccount, getEvents, getFriendRequests, getFriends, pingServer, removeFriend, sendFriendRequest } from "../api/calendar";
-import type { CalendarEvent } from "../api/calendar";
+import { createEvent, deleteAccount, getEvents, getFriendRequests, getFriends, pingServer, removeFriend, sendFriendRequest, sendFriendRequestByLogin } from "../api/calendar";
+import type { CalendarEvent, FriendRequest } from "../api/calendar";
 import { errorMessage } from "../api/client";
 import { useResource } from "../hooks/useResource";
-import { dateKey, eventCard, initials, monthDays, readableDate } from "./plannerData";
+import { dateKey, eventCard, eventDay, initials, localDay, localInputToIso, monthDays, readableDate, statusLabels } from "./plannerData";
+import EventView from "./EventView";
 import "./Planner.css";
 
 const navigation = [
@@ -41,12 +42,6 @@ const navigation = [
     subtitle: "Хорошие планы, которые уже стали воспоминаниями.",
   },
   {
-    id: "settings",
-    label: "Настройки",
-    icon: "⚙",
-    subtitle: "Пусть ваше пространство будет удобным для вас.",
-  },
-  {
     id: "profile",
     label: "Профиль",
     icon: "○",
@@ -62,7 +57,9 @@ function MonthCalendar({ month, onMonthChange, events, selectedDate, onSelect }:
   onSelect: (day: string) => void;
 }) {
   const title = month.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
-  const eventDates = new Set(events.map((event) => event.deadline.slice(0, 10)));
+  const voting = (event: CalendarEvent) => event.status === "collecting" || event.status === "voting";
+  const eventDates = new Set(events.filter((event) => event.status !== "cancelled" && !voting(event)).map(eventDay));
+  const voteDates = new Set(events.filter(voting).map((event) => localDay(event.deadline)));
   return (
     <section className="pl-card pl-month" aria-label={title}>
       <div className="pl-section-heading">
@@ -82,13 +79,13 @@ function MonthCalendar({ month, onMonthChange, events, selectedDate, onSelect }:
             aria-current={day.key === dateKey(new Date()) ? "date" : undefined}
             onClick={() => onSelect(day.key)}
             onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(day.key); } }}
-            className={`pl-day ${day.outside ? "pl-other-day" : ""} ${day.key === dateKey(new Date()) ? "pl-today" : ""} ${eventDates.has(day.key) ? "pl-event-day" : ""}`}
+            className={`pl-day ${day.outside ? "pl-other-day" : ""} ${day.key === dateKey(new Date()) ? "pl-today" : ""} ${eventDates.has(day.key) || voteDates.has(day.key) ? "pl-event-day" : ""} ${voteDates.has(day.key) && !eventDates.has(day.key) ? "pl-vote-day" : ""}`}
           >{day.day}</span>
         ))}
       </div>
       <div className="pl-legend">
         <span><i className="pl-dot sage" /> События</span>
-        <span><i className="pl-dot lavender" /> Голосование · In progress</span>
+        <span><i className="pl-dot lavender" /> Дедлайн голосования</span>
       </div>
     </section>
   );
@@ -99,19 +96,6 @@ function ResourceStatus({ resource }: { resource: { loading: boolean; error: str
     {resource.loading && <p className="pl-muted" role="status">Загружаем…</p>}
     {resource.error && <p className="message error" role="alert">{resource.error} <button className="pl-button" onClick={() => void resource.refresh()}>Повторить</button></p>}
   </>;
-}
-
-function Timezone() {
-  return (
-    <select aria-label="Часовой пояс · In progress" defaultValue="Москва" disabled title="In progress">
-      <option value="Москва">UTC+03:00 — Москва</option>
-      <option value="Лондон">UTC+00:00 — Лондон</option>
-      <option value="Берлин">UTC+02:00 — Берлин</option>
-      <option value="Екатеринбург">UTC+05:00 — Екатеринбург</option>
-      <option value="Новосибирск">UTC+07:00 — Новосибирск</option>
-      <option value="Токио">UTC+09:00 — Токио</option>
-    </select>
-  );
 }
 
 export default function Planner({ user, onLogout }: { user: User; onLogout: (message?: string) => void }) {
@@ -136,8 +120,10 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
   const page = navigation.find((item) => item.id === view) ?? navigation[1];
   const today = dateKey(new Date());
   const allEvents = [...eventResource.data].sort((a, b) => a.deadline.localeCompare(b.deadline) || a.id - b.id).map(eventCard);
-  const events = allEvents.filter((event) => event.deadline.slice(0, 10) >= today);
-  const pastEvents = allEvents.filter((event) => event.deadline.slice(0, 10) < today);
+  const isPast = (event: (typeof allEvents)[number]) => event.status === "cancelled" ||
+    (event.status !== "collecting" && event.status !== "voting" && event.day < today);
+  const events = allEvents.filter((event) => !isPast(event));
+  const pastEvents = allEvents.filter(isPast);
   const selectedEvent = allEvents.find((event) => event.id === selectedEventId);
   const friends = friendResource.data.filter((friend) => friend.id !== user.id).map((friend, index) => ({
     ...friend, name: friend.login, tag: `@${friend.login}`, initials: initials(friend.login), tone: ["peach", "sage", "lavender"][index % 3],
@@ -148,6 +134,7 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
     const friend = friends.find((item) => item.id === id);
     return friend ? `@${friend.login}` : `ID ${id}`;
   };
+  const requestName = (item: FriendRequest) => item.login ? `@${item.login}` : userName(item.friend_id);
 
   useEffect(() => { document.title = "Календарь · Вместе"; }, []);
 
@@ -177,10 +164,20 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
     const form = event.currentTarget;
     const fields = new FormData(form);
     const name = String(fields.get("name") ?? "").trim();
-    const day = String(fields.get("deadline") ?? "");
-    if (!name || !day) { setError("Укажите название и дедлайн события."); return; }
+    const deadlineValue = String(fields.get("deadline") ?? "");
+    if (!name || !deadlineValue) { setError("Укажите название и дедлайн события."); return; }
+    if (new Date(deadlineValue) <= new Date()) { setError("Дедлайн голосования должен быть в будущем."); return; }
+    const description = String(fields.get("description") ?? "").trim();
+    const inviteLogins = [
+      ...fields.getAll("invite").map(String),
+      ...String(fields.get("invite_tags") ?? "").split(/[\s,]+/).map((login) => login.replace(/^@/, "")),
+    ].filter(Boolean);
     void run(async () => {
-      const created = await createEvent({ name, online: fields.get("online") === "true", deadline: `${day}T00:00:00` });
+      const created = await createEvent({
+        name, online: fields.get("online") === "true", deadline: localInputToIso(deadlineValue),
+        ...(description ? { description } : {}), invite_logins: [...new Set(inviteLogins)],
+      });
+      const day = localDay(created.deadline);
       eventResource.setData((previous) => [...previous.filter((item) => item.id !== created.id), created]);
       setSelectedEventId(created.id);
       setEventTab("Даты");
@@ -197,15 +194,15 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
   function handleFriend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    const id = Number(new FormData(form).get("friend_id"));
-    if (!Number.isSafeInteger(id) || id <= 0) { setError("Введите положительный целый ID пользователя."); return; }
-    if (id === user.id) { setError("Нельзя добавить себя в друзья."); return; }
-    if (friends.some((item) => item.id === id)) { setError("Этот пользователь уже в друзьях."); return; }
+    const login = String(new FormData(form).get("friend_login") ?? "").trim().replace(/^@/, "");
+    if (!login) { setError("Введите логин пользователя."); return; }
+    if (login === user.login) { setError("Нельзя добавить себя в друзья."); return; }
+    if (friends.some((item) => item.login === login)) { setError("Этот пользователь уже в друзьях."); return; }
     void run(async () => {
-      await sendFriendRequest(id);
+      await sendFriendRequestByLogin(login);
       form.reset();
       friendDialog.current?.close();
-      setNotice(incoming.some((item) => item.friend_id === id) ? "Заявка принята." : "Заявка отправлена.");
+      setNotice(incoming.some((item) => item.login === login) ? "Заявка принята." : "Заявка отправлена.");
       await refreshFriends();
     });
   }
@@ -250,7 +247,7 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
             key={event.id}
             onClick={() => {
               setSelectedEventId(event.id);
-              setMonth(new Date(`${event.deadline.slice(0, 10)}T00:00:00`));
+              setMonth(new Date(`${event.day}T00:00:00`));
               setEventTab("Даты");
               setView("event");
             }}
@@ -261,14 +258,14 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
             <span className="pl-event-content">
               <span className="pl-event-top">
                 <strong>{event.title}</strong>
-                <span className={`pl-badge ${event.tone}`}>{event.deadline.slice(0, 10) < today ? "Дедлайн прошёл" : "Ожидается"}</span>
+                <span className={`pl-badge ${event.tone}`}>{event.status ? statusLabels[event.status] : event.deadline.slice(0, 10) < today ? "Дедлайн прошёл" : "Ожидается"}</span>
               </span>
               <span className="pl-event-type">
                 {event.type} <span>·</span> Событие #{event.id}
               </span>
               <span className="pl-event-meta">
-                <span>♧ Участники · In progress</span>
-                <span>◷ {event.date}</span>
+                <span>{event.finalDate ? `★ Итог: ${event.finalDate}` : event.status === "cancelled" ? "Отменено" : "♧ Идёт выбор даты"}</span>
+                <span>◷ Дедлайн: {event.date}</span>
                 <span className="pl-card-arrow" aria-hidden="true">
                   ↗
                 </span>
@@ -351,10 +348,9 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
             </summary>
             <div className="pl-notification-panel pl-card">
               <h3>Уведомления <span className="pl-count">{incoming.length}</span></h3>
-              {incoming.map((item) => <p key={item.friend_id}><strong>Заявка от {userName(item.friend_id)}</strong><button className="pl-button" onClick={() => setView("friends")}>Открыть</button></p>)}
+              {incoming.map((item) => <p key={item.friend_id}><strong>Заявка от {requestName(item)}</strong><button className="pl-button" onClick={() => setView("friends")}>Открыть</button></p>)}
               {!requestResource.loading && !incoming.length && <p>Новых заявок нет.</p>}
               <ResourceStatus resource={requestResource} />
-              <p className="pl-muted">Уведомления о событиях · In progress</p>
             </div>
           </details>
           <button
@@ -393,23 +389,12 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
           </p>
         </div>
         <div className="pl-sidebar-bottom">
-          <label className="pl-kicker">
-            ЧАСОВОЙ ПОЯС · In progress
-            <Timezone />
-          </label>
           <div className="pl-user">
             <span className="pl-avatar sage">{initials(user.login)}</span>
             <div>
               <strong>{user.login}</strong>
               <small>@{user.login}</small>
             </div>
-            <button
-              className="pl-icon-button"
-              aria-label="Открыть настройки"
-              onClick={() => setView("settings")}
-            >
-              ⚙
-            </button>
           </div>
         </div>
       </aside>
@@ -532,7 +517,7 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
             {eventCards(past ? pastEvents : events)}
           </>
         )}
-        {view === "archive" && <><p className="pl-muted">Архивирование · In progress. События с прошедшим дедлайном:</p>{eventCards(pastEvents)}</>}
+        {view === "archive" && <><p className="pl-muted">Завершённые и отменённые события:</p>{eventCards(pastEvents)}</>}
         {view === "calendar" && (
           <div className="pl-calendar-layout">
             {calendar}
@@ -541,7 +526,7 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
                 <h3>{selectedDate ? readableDate(selectedDate) : "В этом месяце"}</h3>
                 {selectedDate ? <button className="pl-button" onClick={() => setSelectedDate("")}>Весь месяц</button> : <span className="pl-muted">{month.toLocaleDateString("ru-RU", { month: "long", year: "numeric" })}</span>}
               </div>
-              {eventCards(allEvents.filter((event) => selectedDate ? event.deadline.slice(0, 10) === selectedDate : event.deadline.slice(0, 7) === dateKey(month).slice(0, 7)))}
+              {eventCards(allEvents.filter((event) => selectedDate ? event.day === selectedDate : event.day.slice(0, 7) === dateKey(month).slice(0, 7)))}
             </section>
           </div>
         )}
@@ -549,13 +534,12 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
           <ResourceStatus resource={friendResource} />
           <ResourceStatus resource={requestResource} />
           <div className="pl-section-heading"><h3>Друзья · {friends.length}</h3><button className="pl-button" disabled={busy || friendResource.loading || requestResource.loading} onClick={() => void refreshFriends()}>Обновить ↻</button></div>
-          {!friendResource.loading && !friendResource.error && !friends.length && <p className="pl-muted">Добавьте своего первого друга по ID.</p>}
+          {!friendResource.loading && !friendResource.error && !friends.length && <p className="pl-muted">Добавьте своего первого друга по логину.</p>}
           <div className="pl-friends-grid">
             {friends.map((friend) => (
               <section className="pl-card pl-friend" key={friend.id}>
                 <span className={`pl-avatar ${friend.tone}`}>{friend.initials}</span>
                 <h3>{friend.name}</h3><p>{friend.tag}</p>
-                <button className="pl-button" disabled>Написать · In progress</button>
                 <button className="pl-button" disabled={busy} onClick={() => void run(async () => { await removeFriend(friend.id); setNotice("Друг удалён."); await refreshFriends(); })}>Удалить из друзей</button>
               </section>
             ))}
@@ -563,66 +547,12 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
           <div className="pl-section-heading"><h3>Заявки в друзья</h3></div>
           {!requestResource.loading && !requestResource.error && !pending.length && <p className="pl-muted">Нет ожидающих заявок.</p>}
           {pending.map((item) => <section className="pl-card pl-person-row" key={`${item.type}-${item.friend_id}`}>
-            <span className="pl-avatar sage">{initials(userName(item.friend_id))}</span>
-            <div><strong>{userName(item.friend_id)}</strong><small>{item.type === "incoming" ? "Входящая заявка" : "Исходящая заявка"}</small></div>
+            <span className="pl-avatar sage">{initials(requestName(item).replace(/^@/, ""))}</span>
+            <div><strong>{requestName(item)}</strong><small>{item.type === "incoming" ? "Входящая заявка" : "Исходящая заявка"}</small></div>
             {item.type === "incoming" && <button className="pl-button pl-primary" disabled={busy} onClick={() => void run(async () => { await sendFriendRequest(item.friend_id); setNotice("Заявка принята."); await refreshFriends(); })}>Принять</button>}
             <button className="pl-button" disabled={busy} onClick={() => void run(async () => { await removeFriend(item.friend_id); setNotice("Заявка удалена."); await refreshFriends(); })}>{item.type === "incoming" ? "Отклонить" : "Отменить"}</button>
           </section>)}
         </>}
-
-        {view === "settings" && (
-          <div className="pl-settings-grid">
-            <section className="pl-card pl-settings-card">
-              <h3>Часовой пояс · In progress</h3>
-              <p>Чтобы находить общее время, где бы вы ни были.</p>
-              <Timezone />
-            </section>
-            <section className="pl-card pl-settings-card">
-              <h3>Уведомления · In progress</h3>
-              <p>Выберите, о чём вас уведомлять.</p>
-              {[
-                "Приглашение в событие",
-                "Новый вариант даты или места",
-                "Дедлайн голосования",
-                "Итоговый результат",
-                "Напоминание о событии",
-              ].map((label, index) => (
-                <label className="pl-setting" key={label}>
-                  {label}
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    disabled
-                    defaultChecked={index !== 4}
-                  />
-                </label>
-              ))}
-            </section>
-            <section className="pl-card pl-settings-card">
-              <h3>Голосование по умолчанию · In progress</h3>
-              <p>Как вы будете выбирать лучшие варианты.</p>
-              <label className="pl-radio">
-                <input type="radio" name="vote" disabled defaultChecked /> За / Против /
-                Нейтрально
-              </label>
-              <label className="pl-radio">
-                <input type="radio" name="vote" disabled /> Ранжирование по приоритету
-              </label>
-              <label className="pl-setting">
-                Показывать промежуточные результаты
-                <input type="checkbox" role="switch" disabled defaultChecked />
-              </label>
-            </section>
-            <div className="pl-settings-footer">
-              <span className="pl-muted">
-                In progress · Сохранение настроек пока недоступно.
-              </span>
-              <button className="pl-button pl-primary" disabled>
-                Сохранить настройки · In progress
-              </button>
-            </div>
-          </div>
-        )}
 
         {view === "profile" && (
           <>
@@ -660,75 +590,30 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
         {view === "event" && selectedEvent && (
           <>
             <div className="pl-tabs">
-              {["Даты", "Места", "Участники", "Обсуждение"].map((tab) => (
+              {["Даты", "Участники"].map((tab) => (
                 <button
                   key={tab}
                   aria-pressed={eventTab === tab}
                   onClick={() => setEventTab(tab)}
                 >
-                  {tab}{tab !== "Даты" ? " · In progress" : ""}
+                  {tab}
                 </button>
               ))}
             </div>
-            {eventTab === "Даты" && (
-              <div className="pl-calendar-layout">
-                <div>
-                  <div className="pl-section-heading">
-                    <h3>Дедлайн события</h3>
-                  </div>
-                  {calendar}
-                  <p className="pl-muted pl-help">
-                    Дедлайн: {selectedEvent.date}.
-                    <br />
-                    Отметки занятости · In progress
-                  </p>
-                </div>
-                <section className="pl-card pl-settings-card">
-                  <h3>Кто когда свободен</h3>
-                  <p>In progress</p>
-                  <button className="pl-button pl-primary" disabled>Завершить сбор вариантов · In progress</button>
-                </section>
-              </div>
+            {(eventTab === "Даты" || eventTab === "Участники") && (
+              <EventView
+                key={selectedEvent.id}
+                eventId={selectedEvent.id}
+                tab={eventTab}
+                user={user}
+                friendLogins={friends.map((friend) => friend.login)}
+                busy={busy}
+                run={run}
+                notify={setNotice}
+                onChanged={eventResource.refresh}
+                onLeft={() => { setSelectedEventId(null); setView("events"); }}
+              />
             )}
-            {eventTab === "Места" && (
-              <section className="pl-card pl-settings-card">
-                <h3>Предложенные места</h3>
-                <p>In progress</p>
-                <label className="pl-field">
-                  Новое место
-                  <input placeholder="Название или адрес места" disabled />
-                </label>
-                <button className="pl-button pl-primary" disabled>
-                  ＋ Добавить место · In progress
-                </button>
-              </section>
-            )}
-            {eventTab === "Участники" && (
-              <section className="pl-card pl-settings-card">
-                <h3>Участники события</h3>
-                <p>In progress</p>
-                <button className="pl-button pl-primary" disabled>
-                  ＋ Пригласить ещё · In progress
-                </button>
-              </section>
-            )}
-            {eventTab === "Обсуждение" && (
-              <section className="pl-card pl-settings-card">
-                <h3>Общий чат</h3>
-                <p>Обсуждение события</p>
-                <p>In progress</p>
-                <label className="pl-field">
-                  Ваше сообщение
-                  <input placeholder="Написать сообщение…" disabled />
-                </label>
-                <button className="pl-button pl-primary" disabled>
-                  Отправить · In progress
-                </button>
-              </section>
-            )}
-            <button className="pl-button pl-archive-button" disabled>
-              Архивировать событие · In progress
-            </button>
           </>
         )}
         <footer className="pl-footer">
@@ -751,15 +636,15 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
               ×
             </button>
           </div>
-          <p className="pl-muted">Добавьте друга по ID пользователя.</p>
+          <p className="pl-muted">Добавьте друга по логину.</p>
           <label className="pl-field">
-            ID пользователя
-            <input name="friend_id" type="number" min="1" step="1" max={Number.MAX_SAFE_INTEGER} placeholder="Например, 12" required disabled={busy} autoComplete="off" />
+            Логин пользователя
+            <input name="friend_login" type="text" maxLength={65} placeholder="@username" required disabled={busy} autoComplete="off" />
           </label>
           <p className="pl-help pl-muted">
-            Свой ID можно посмотреть в профиле.
+            Ваш логин: @{user.login}.
             <br />
-            Введите ID пользователя, которому хотите отправить заявку.
+            Введите логин пользователя, которому хотите отправить заявку.
           </p>
           {error && <p className="message error" role="alert">{error}</p>}
           <div className="pl-dialog-actions">
@@ -797,38 +682,30 @@ export default function Planner({ user, onLogout }: { user: User; onLogout: (mes
               <option value="true">Онлайн</option>
             </select>
           </label>
-          <div className="pl-date-fields">
-            <label className="pl-field">
-              Ищем дату с · In progress<input type="date" disabled />
-            </label>
-            <label className="pl-field">
-              По · In progress
-              <input type="date" disabled />
-            </label>
-          </div>
           <label className="pl-field">
-            Дедлайн события
-            <input name="deadline" type="date" required disabled={busy} defaultValue={selectedDate || today} />
+            Дедлайн голосования
+            <input name="deadline" type="datetime-local" required disabled={busy} defaultValue={`${selectedDate && selectedDate > today ? selectedDate : dateKey(new Date(new Date().getTime() + 86400000))}T20:00`} />
           </label>
           <label className="pl-field">
-            Описание · In progress
-            <textarea rows={2} placeholder="Что планируем?" disabled />
+            Описание
+            <textarea name="description" rows={2} placeholder="Что планируем?" maxLength={1024} disabled={busy} />
           </label>
-          <fieldset className="pl-invite-list" disabled>
-            <legend>Кого пригласить? · In progress</legend>
+          <fieldset className="pl-invite-list" disabled={busy}>
+            <legend>Кого пригласить?</legend>
+            {!friends.length && <p className="pl-muted">Пока нет друзей — пригласите по логину ниже.</p>}
             {friends.map((friend) => (
               <label className="pl-radio" key={friend.tag}>
-                <input type="checkbox" />
+                <input type="checkbox" name="invite" value={friend.login} />
                 {friend.name}
               </label>
             ))}
           </fieldset>
           <label className="pl-field">
-            Пригласить по тегу · In progress
-            <input placeholder="@username" disabled />
+            Пригласить по тегу
+            <input name="invite_tags" placeholder="@username, можно несколько через запятую" disabled={busy} autoComplete="off" />
           </label>
           <p className="pl-help pl-muted">
-            Приглашения, категории событий и ссылки-приглашения · In progress
+            После создания участники предложат варианты даты и проголосуют до дедлайна.
           </p>
           {error && <p className="message error" role="alert">{error}</p>}
           <div className="pl-dialog-actions">

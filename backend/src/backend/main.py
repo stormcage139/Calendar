@@ -6,6 +6,7 @@ from backend.api.v1.routers import (
     event_router,
     friends_router,
     user_router,
+    voting_router,
 )
 from backend.core.config import config, get_logger
 
@@ -17,6 +18,7 @@ app.include_router(user_router, tags=["users_debug"])
 app.include_router(auth_router, tags=["auth"])
 app.include_router(friends_router, tags=["friends"], prefix="/friends")
 app.include_router(event_router, tags=["events"], prefix="/events")
+app.include_router(voting_router, tags=["voting"], prefix="/events")
 
 @app.get("/ping")
 def pong() -> str:

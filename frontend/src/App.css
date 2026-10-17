@@ -15,7 +15,7 @@
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 750;
   letter-spacing: -1.3px;
   gap: 10px;
@@ -48,7 +48,7 @@
   align-items: center;
   gap: 8px;
   color: #657050;
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 1.6px;
   font-weight: 650;
 }
@@ -59,7 +59,7 @@
   background: #7c8f5e;
 }
 h1 {
-  font-size: clamp(44px, 4.6vw, 68px);
+  font-size: clamp(46px, 4.8vw, 70px);
   line-height: 1.08;
   letter-spacing: -3px;
   font-weight: 500;
@@ -85,7 +85,7 @@ h1 {
 .story-description {
   color: #777b6e;
   line-height: 1.8;
-  font-size: 14px;
+  font-size: 17px;
 }
 .preview {
   background: #fffefa;
@@ -103,13 +103,13 @@ h1 {
   padding: 20px 21px 18px;
 }
 .mini-label {
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 650;
   color: #919685;
   letter-spacing: 1.4px;
 }
 .preview h3 {
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 600;
   margin-top: 6px;
   letter-spacing: -0.5px;
@@ -119,7 +119,7 @@ h1 {
   font-weight: 400;
 }
 .week-label {
-  font-size: 9px;
+  font-size: 13px;
   border: 1px solid #e7e9e0;
   padding: 7px 9px;
   border-radius: 5px;
@@ -137,11 +137,11 @@ h1 {
   align-items: center;
   flex-direction: column;
   gap: 5px;
-  font-size: 7px;
+  font-size: 12px;
   color: #858979;
 }
 .calendar-days b {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 500;
   color: #434a39;
   width: 23px;
@@ -171,7 +171,7 @@ h1 {
   display: flex;
   flex-direction: column;
   justify-content: space-around;
-  font-size: 7px;
+  font-size: 12px;
   color: #a2a697;
 }
 .grid-lines {
@@ -187,27 +187,27 @@ h1 {
 }
 .event {
   border-radius: 5px;
-  padding: 9px 7px;
+  padding: 6px 7px;
   z-index: 1;
   margin-block: 4px;
   border-left: 2px solid;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 .event > span {
-  font-size: 6px;
+  font-size: 12px;
   white-space: nowrap;
   opacity: 0.8;
 }
 .event strong {
-  font-size: 9px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.2;
   font-weight: 600;
 }
 .event small {
-  font-size: 7px;
+  font-size: 12px;
   opacity: 0.75;
 }
 .event-green {
@@ -248,7 +248,7 @@ h1 {
 .tiny-avatars i {
   font-style: normal;
   border: 2px solid #e6ecd8;
-  font-size: 7px;
+  font-size: 12px;
   border-radius: 50%;
   width: 19px;
   height: 19px;
@@ -286,7 +286,7 @@ h1 {
   gap: 14px;
   padding: 13px 20px;
   border-top: 1px solid #eef0e7;
-  font-size: 8px;
+  font-size: 12px;
   color: #7c8170;
 }
 .preview-footer > span {
@@ -338,13 +338,13 @@ h1 {
 }
 .invite-note strong {
   display: block;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 550;
 }
 .invite-note div > span {
   display: block;
   color: #929685;
-  font-size: 8px;
+  font-size: 12px;
   margin-top: 5px;
 }
 .note-avatar {
@@ -357,7 +357,7 @@ h1 {
   display: grid;
   place-items: center;
   font-family: Georgia, serif;
-  font-size: 13px;
+  font-size: 16px;
 }
 .story-caption {
   margin-top: 48px;
@@ -365,11 +365,11 @@ h1 {
   align-items: center;
   gap: 13px;
   color: #8b907e;
-  font-size: 11px;
+  font-size: 15px;
   line-height: 1.8;
 }
 .caption-icon {
-  font-size: 25px;
+  font-size: 27px;
   color: #8b9c70;
 }
 .story-caption strong {
@@ -380,7 +380,7 @@ h1 {
   display: flex;
   justify-content: space-between;
   color: #989c8f;
-  font-size: 9px;
+  font-size: 13px;
   gap: 20px;
 }
 .form-panel {
@@ -395,7 +395,7 @@ h1 {
   align-items: center;
   gap: 12px;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 15px;
   color: #92958c;
 }
 .top-prompt button {
@@ -403,7 +403,7 @@ h1 {
   border: 0;
   padding: 7px 0;
   color: #52653d;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
 }
 .top-prompt button span {
@@ -424,25 +424,25 @@ h1 {
   display: grid;
   place-items: center;
   color: #677d49;
-  font-size: 28px;
+  font-size: 30px;
   margin-bottom: 28px;
   font-weight: 400;
 }
 .form-eyebrow {
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: 1.5px;
   color: #8b927f;
   margin-bottom: 13px;
 }
 h2 {
-  font-size: 31px;
+  font-size: 33px;
   line-height: 1.22;
   letter-spacing: -1.2px;
   font-weight: 550;
   overflow-wrap: anywhere;
 }
 .form-description {
-  font-size: 12px;
+  font-size: 16px;
   color: #8b8f83;
   line-height: 1.8;
   margin-top: 12px;
@@ -462,7 +462,7 @@ h2 {
   background: transparent;
   color: #8a8f7f;
   border-radius: 5px;
-  font-size: 12px;
+  font-size: 16px;
 }
 .mode-switch button[aria-pressed="true"] {
   background: #fffefa;
@@ -472,7 +472,7 @@ h2 {
 }
 form label {
   display: block;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 550;
   margin: 18px 0 9px;
 }
@@ -488,7 +488,7 @@ form input {
   padding: 0 13px;
   background: #fffefa;
   color: #303a27;
-  font-size: 12px;
+  font-size: 16px;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -534,7 +534,7 @@ form input:focus {
   border-radius: 7px;
   background: #4e6637;
   color: #fffefa;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 550;
   margin-top: 25px;
   transition:
@@ -546,7 +546,7 @@ form input:focus {
   transform: translateY(-1px);
 }
 .primary-button > span:last-child {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 400;
 }
 .form-footnote {
@@ -556,7 +556,7 @@ form input:focus {
   gap: 6px;
   margin-top: 22px;
   color: #9b9f91;
-  font-size: 10px;
+  font-size: 14px;
 }
 .form-footnote svg {
   width: 14px;
@@ -564,11 +564,11 @@ form input:focus {
 }
 .panel-bottom {
   text-align: center;
-  font-size: 10px;
+  font-size: 14px;
   color: #a0a494;
 }
 .little-star {
-  font-size: 15px;
+  font-size: 18px;
   color: #9ca88a;
   vertical-align: middle;
   margin-right: 6px;
@@ -578,12 +578,12 @@ form input:focus {
   width: fit-content;
   margin: 12px auto 0;
   color: #52653d;
-  font-size: 11px;
+  font-size: 15px;
 }
 .message {
   padding: 11px 13px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.6;
   margin-top: 15px;
 }
@@ -633,31 +633,31 @@ form input:focus {
     padding-inline: 7%;
   }
   .top-prompt {
-    font-size: 10px;
+    font-size: 14px;
     gap: 7px;
   }
   .top-prompt button {
-    font-size: 10px;
+    font-size: 14px;
   }
   .eyebrow {
-    font-size: 8px;
+    font-size: 12px;
     letter-spacing: 1px;
   }
   .story-footer {
-    font-size: 8px;
+    font-size: 12px;
   }
   .story-footer span:last-child {
     max-width: 140px;
     text-align: right;
   }
   h2 {
-    font-size: 27px;
+    font-size: 29px;
   }
   .event-soft strong {
-    font-size: 8px;
+    font-size: 12px;
   }
   .week-label {
-    font-size: 8px;
+    font-size: 12px;
   }
   .preview-note {
     display: none;
@@ -673,7 +673,7 @@ form input:focus {
     border-bottom: 1px solid #e5e7dc;
   }
   .brand {
-    font-size: 24px;
+    font-size: 26px;
   }
   .brand-symbol {
     width: 31px;
@@ -685,12 +685,12 @@ form input:focus {
     max-width: none;
   }
   h1 {
-    font-size: 42px;
+    font-size: 44px;
     letter-spacing: -2px;
     margin: 15px 0;
   }
   .story-description {
-    font-size: 12px;
+    font-size: 16px;
   }
   .desktop-break {
     display: none;
@@ -709,10 +709,10 @@ form input:focus {
     max-width: 420px;
   }
   .top-prompt {
-    font-size: 11px;
+    font-size: 15px;
   }
   .top-prompt button {
-    font-size: 11px;
+    font-size: 15px;
   }
   .welcome-icon {
     display: none;
@@ -721,10 +721,10 @@ form input:focus {
     margin-top: 4px;
   }
   h2 {
-    font-size: 29px;
+    font-size: 31px;
   }
   .form-description {
-    font-size: 12px;
+    font-size: 16px;
   }
   .mode-switch {
     margin-top: 24px;

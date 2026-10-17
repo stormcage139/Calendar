@@ -1,0 +1,116 @@
+.ev-view {
+  display: grid;
+  gap: 22px;
+  margin-top: 22px;
+}
+.ev-view .pl-settings-card > h3 + p {
+  color: var(--pl-muted);
+  font-size: 16px;
+  line-height: 1.8;
+  margin: 12px 0 18px;
+}
+.ev-summary .pl-section-heading {
+  gap: 12px;
+}
+.ev-description {
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 12px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ev-summary > .pl-muted {
+  font-size: 15px;
+  line-height: 1.8;
+}
+.ev-summary .pl-result {
+  margin: 16px 0 0;
+}
+.ev-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ev-view .pl-settings-card > h3 + .ev-options,
+.ev-view .pl-settings-card > h3 + .pl-muted {
+  margin-top: 16px;
+}
+.ev-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--pl-border);
+}
+.ev-option > input {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.ev-option-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.ev-option-main strong {
+  font-weight: 550;
+}
+.ev-option-main small {
+  color: var(--pl-muted);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.ev-final .ev-option-main strong {
+  color: var(--pl-primary);
+}
+.ev-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: #edf0e5;
+  overflow: hidden;
+}
+.ev-bar > i {
+  display: block;
+  height: 100%;
+  background: #93a578;
+}
+.ev-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+.ev-add-option {
+  margin-top: 8px;
+  border-top: 1px solid var(--pl-border);
+  padding-top: 18px;
+}
+.ev-add-option .pl-date-fields {
+  margin-bottom: 16px;
+}
+.ev-close {
+  margin-top: 22px;
+  padding-top: 8px;
+  border-top: 1px solid var(--pl-border);
+}
+.ev-close > .pl-button {
+  margin-top: 12px;
+}
+.ev-invite-form .pl-votes {
+  margin-bottom: 16px;
+}
+.ev-invite {
+  border-color: #c4ceb7;
+}
+.pl-vote-day::after {
+  background: #b8a4cb;
+}
+@media (max-width: 700px) {
+  .ev-option {
+    flex-wrap: wrap;
+  }
+  .ev-view .pl-date-fields {
+    grid-template-columns: 1fr;
+  }
+}
